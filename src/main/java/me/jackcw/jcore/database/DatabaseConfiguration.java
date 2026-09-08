@@ -17,6 +17,16 @@ public final class DatabaseConfiguration
                     "Database settings cannot be null"
             );
 
+        switch (type)
+        {
+            case SQLITE:
+                if (!(settings instanceof SQLiteConfiguration))
+                    throw new IllegalArgumentException(
+                            "SQLite database requires SQLiteConfiguration"
+                    );
+                break;
+        }
+
         this.type = type;
         this.settings = settings;
     }
