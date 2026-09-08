@@ -10,6 +10,7 @@ import java.io.IOException;
 public final class YamlFile
 {
     private final JavaPlugin plugin;
+    private final String name;
     private final File file;
     private final boolean copyResource;
 
@@ -22,7 +23,18 @@ public final class YamlFile
 
     public YamlFile(JavaPlugin plugin, String name, boolean copyResource)
     {
+        if (plugin == null)
+            throw new IllegalArgumentException(
+                    "Plugin cannot be null"
+            );
+
+        if (name == null || name.isBlank())
+            throw new IllegalArgumentException(
+                    "Name cannot be null or blank"
+            );
+
         this.plugin = plugin;
+        this.name = name;
         this.file = new File(plugin.getDataFolder(), name);
         this.copyResource = copyResource;
 
@@ -34,27 +46,9 @@ public final class YamlFile
         if (!file.exists())
         {
             if (copyResource)
-            {
-                plugin.saveResource(file.getName(), false);
-            }
+                createFromResource();
             else
-            {
-                try
-                {
-                    File parent = file.getParentFile();
-
-                    if (parent != null && !parent.exists())
-                        parent.mkdirs();
-
-                    file.createNewFile();
-                }
-                catch (IOException e)
-                {
-                    throw new RuntimeException(
-                            "Could not create " + file.getName(), e
-                    );
-                }
-            }
+                createFile();
         }
 
         config = YamlConfiguration.loadConfiguration(file);
@@ -69,7 +63,7 @@ public final class YamlFile
         catch (IOException e)
         {
             throw new RuntimeException(
-                    "Could not save " + file.getName(), e
+                    "Could not save " + name, e
             );
         }
     }
@@ -94,5 +88,45 @@ public final class YamlFile
     public File getFile()
     {
         return file;
+    }
+
+    private void createFile()
+    {
+        try
+        {
+            File parent = file.getParentFile();
+
+            if (parent != null && !parent.exists())
+                parent.mkdirs();
+
+            file.createNewFile();
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(
+                    "Could not create: " + name, e
+            );
+        }
+    }
+
+    private void createFromResource()
+    {
+        File parent = file.getParentFile();
+
+        if (parent != null && !parent.exists() && !parent.mkdirs())
+            throw new RuntimeException(
+                    "Could not create directory for " + name
+            );
+
+        try
+        {
+            plugin.saveResource(name, false);
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new RuntimeException(
+                    "Could not copy resource " + name, e
+            );
+        }
     }
 }
