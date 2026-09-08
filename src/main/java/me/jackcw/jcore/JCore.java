@@ -1,8 +1,6 @@
 package me.jackcw.jcore;
 
-import me.jackcw.jcore.database.Database;
-import me.jackcw.jcore.database.MigrationManager;
-import me.jackcw.jcore.database.SQLiteDatabase;
+import me.jackcw.jcore.database.*;
 import me.jackcw.jcore.task.TaskManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -15,26 +13,32 @@ public final class JCore
 
     private boolean initialized;
 
-    private JCore(JavaPlugin plugin)
+    private JCore(JavaPlugin plugin, DatabaseConfiguration databaseConfiguration)
     {
         this.plugin = plugin;
         this.taskManager = new TaskManager(plugin);
-        this.database = new SQLiteDatabase(
-                plugin,
-                taskManager,
-                "database.db"
-        );
+        this.database = DatabaseFactory.create(plugin, taskManager, databaseConfiguration);
         this.migrationManager = new MigrationManager(database);
     }
 
     public static JCore create(JavaPlugin plugin)
+    {
+        return create(plugin, new DatabaseConfiguration(DatabaseType.SQLITE, "database.db"));
+    }
+
+    public static JCore create(JavaPlugin plugin, DatabaseConfiguration databaseConfiguration)
     {
         if (plugin == null)
             throw new IllegalArgumentException(
                     "Plugin cannot be null"
             );
 
-        return new JCore(plugin);
+        if (databaseConfiguration == null)
+            throw new IllegalArgumentException(
+                    "Database configuration cannot be null"
+            );
+
+        return new JCore(plugin, databaseConfiguration);
     }
 
     public void initialize()
