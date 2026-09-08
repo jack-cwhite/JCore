@@ -36,32 +36,104 @@ public final class DatabaseResult
 
     public int getInt(String column)
     {
-        return ((Number) getValue(column)).intValue();
+        Object value = getValue(column);
+
+        if (value == null)
+            throw new DatabaseException(
+                    "Column '" + column + "' contains NULL"
+            );
+
+        if (!(value instanceof Number number))
+            throw new DatabaseException(
+                    "Column '" + column + "' does not contain a numeric value"
+            );
+
+        return number.intValue();
     }
 
     public long getLong(String column)
     {
-        return ((Number) getValue(column)).longValue();
+        Object value = getValue(column);
+
+        if (value == null)
+            throw new DatabaseException(
+                    "Column '" + column + "' contains NULL"
+            );
+
+        if (!(value instanceof Number number))
+            throw new DatabaseException(
+                    "Column '" + column + "' does not contain a numeric value"
+            );
+
+        return number.longValue();
     }
 
     public short getShort(String column)
     {
-        return ((Number) getValue(column)).shortValue();
+        Object value = getValue(column);
+
+        if (value == null)
+            throw new DatabaseException(
+                    "Column '" + column + "' contains NULL"
+            );
+
+        if (!(value instanceof Number number))
+            throw new DatabaseException(
+                    "Column '" + column + "' does not contain a numeric value"
+            );
+
+        return number.shortValue();
     }
 
     public byte getByte(String column)
     {
-        return ((Number) getValue(column)).byteValue();
+        Object value = getValue(column);
+
+        if (value == null)
+            throw new DatabaseException(
+                    "Column '" + column + "' contains NULL"
+            );
+
+        if (!(value instanceof Number number))
+            throw new DatabaseException(
+                    "Column '" + column + "' does not contain a numeric value"
+            );
+
+        return number.byteValue();
     }
 
     public float getFloat(String column)
     {
-        return ((Number) getValue(column)).floatValue();
+        Object value = getValue(column);
+
+        if (value == null)
+            throw new DatabaseException(
+                    "Column '" + column + "' contains NULL"
+            );
+
+        if (!(value instanceof Number number))
+            throw new DatabaseException(
+                    "Column '" + column + "' does not contain a numeric value"
+            );
+
+        return number.floatValue();
     }
 
     public double getDouble(String column)
     {
-        return ((Number) getValue(column)).doubleValue();
+        Object value = getValue(column);
+
+        if (value == null)
+            throw new DatabaseException(
+                    "Column '" + column + "' contains NULL"
+            );
+
+        if (!(value instanceof Number number))
+            throw new DatabaseException(
+                    "Column '" + column + "' does not contain a numeric value"
+            );
+
+        return number.doubleValue();
     }
 
     public boolean getBoolean(String column)
