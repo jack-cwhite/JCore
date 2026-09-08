@@ -153,8 +153,7 @@ public final class SQLiteDatabase implements Database
         );
     }
 
-    @Override
-    public <T> T withConnection(DatabaseFunction<T> operation)
+    private <T> T executeWithConnection(DatabaseFunction<T> operation)
     {
         if (!isConnected())
         {
@@ -177,25 +176,19 @@ public final class SQLiteDatabase implements Database
     }
 
     @Override
+    public <T> T withConnection(DatabaseFunction<T> operation)
+    {
+        return executeWithConnection(operation);
+    }
+
+    @Override
     public void useConnection(Consumer<Connection> operation)
     {
-        if (!isConnected())
-        {
-            throw new DatabaseException(
-                    "Database not connected"
-            );
-        }
-
-        try (Connection connection = createConnection())
+        executeWithConnection((DatabaseFunction<Void>) connection ->
         {
             operation.accept(connection);
-        }
-        catch (SQLException e)
-        {
-            throw new DatabaseException(
-                    "Could not execute database operation", e
-            );
-        }
+            return null;
+        });
     }
 
     @Override
