@@ -12,6 +12,11 @@ public final class Migration
                     "Migration version must be greater than 0"
             );
 
+        if (migration == null)
+            throw new IllegalArgumentException(
+                    "Migration cannot be null"
+            );
+
         this.version = version;
         this.migration = migration;
     }

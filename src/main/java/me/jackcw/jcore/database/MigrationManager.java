@@ -141,8 +141,7 @@ public final class MigrationManager
 
                 throw new DatabaseException(
                         "Could not apply migration " +
-                                migration.getVersion(),
-                        e
+                                migration.getVersion(), e
                 );
             }
         });
