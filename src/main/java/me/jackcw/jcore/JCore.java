@@ -1,13 +1,17 @@
 package me.jackcw.jcore;
 
 import me.jackcw.jcore.database.*;
+import me.jackcw.jcore.storage.FileManager;
 import me.jackcw.jcore.task.TaskManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
 
 public final class JCore
 {
     private final JavaPlugin plugin;
     private final TaskManager taskManager;
+    private final FileManager fileManager;
     private final Database database;
     private final MigrationManager migrationManager;
     private final DatabaseConfiguration databaseConfiguration;
@@ -18,6 +22,7 @@ public final class JCore
     {
         this.plugin = plugin;
         this.taskManager = new TaskManager(plugin);
+        this.fileManager = new FileManager(plugin);
         this.database = DatabaseFactory.create(plugin, taskManager, databaseConfiguration);
         this.migrationManager = new MigrationManager(database);
         this.databaseConfiguration = databaseConfiguration;
@@ -83,6 +88,11 @@ public final class JCore
     public TaskManager tasks()
     {
         return taskManager;
+    }
+
+    public FileManager files()
+    {
+        return fileManager;
     }
 
     public DatabaseConfiguration databaseConfiguration()
