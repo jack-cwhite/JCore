@@ -4,5 +4,6 @@ public enum DatabaseType
 {
     SQLITE,
     MYSQL,
-    MARIADB
+    MARIADB,
+    POSTGRESQL
 }

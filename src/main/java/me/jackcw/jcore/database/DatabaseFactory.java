@@ -31,6 +31,8 @@ public final class DatabaseFactory
             case SQLITE -> new SQLiteDatabase(plugin, taskManager, ((SQLiteConfiguration) configuration.getSettings()).getFileName());
 
             case MYSQL, MARIADB -> new MySQLDatabase(plugin, taskManager, (MySQLConfiguration) configuration.getSettings(), configuration.getType());
+
+            case POSTGRESQL -> new PostgreSQLDatabase(plugin, taskManager, (PostgreSQLConfiguration) configuration.getSettings());
         };
     }
 }

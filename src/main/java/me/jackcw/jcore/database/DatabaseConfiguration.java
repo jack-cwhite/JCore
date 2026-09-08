@@ -30,6 +30,12 @@ public final class DatabaseConfiguration
                     throw new IllegalArgumentException(
                             "MySQL/MariaDB database required MySQLConfiguration"
                     );
+            case POSTGRESQL:
+                if (!(settings instanceof PostgreSQLConfiguration))
+                    throw new IllegalArgumentException(
+                            "PostgreSQL database requires PostgreSQLConfiguration"
+                    );
+                break;
         }
 
         this.type = type;
