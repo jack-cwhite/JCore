@@ -10,6 +10,7 @@ public final class JCore
     private final TaskManager taskManager;
     private final Database database;
     private final MigrationManager migrationManager;
+    private final DatabaseConfiguration databaseConfiguration;
 
     private boolean initialized;
 
@@ -19,6 +20,7 @@ public final class JCore
         this.taskManager = new TaskManager(plugin);
         this.database = DatabaseFactory.create(plugin, taskManager, databaseConfiguration);
         this.migrationManager = new MigrationManager(database);
+        this.databaseConfiguration = databaseConfiguration;
     }
 
     public static JCore create(JavaPlugin plugin)
@@ -81,6 +83,11 @@ public final class JCore
     public TaskManager tasks()
     {
         return taskManager;
+    }
+
+    public DatabaseConfiguration databaseConfiguration()
+    {
+        return databaseConfiguration;
     }
 
     public JavaPlugin plugin()
