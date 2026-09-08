@@ -15,10 +15,11 @@ public final class MySQLDatabase implements Database
 {
     private final MySQLConfiguration configuration;
     private final TaskManager taskManager;
+    private final DatabaseType type;
 
     private DatabaseState state = DatabaseState.DISCONNECTED;
 
-    public MySQLDatabase(JavaPlugin plugin, TaskManager taskManager, MySQLConfiguration configuration)
+    public MySQLDatabase(JavaPlugin plugin, TaskManager taskManager, MySQLConfiguration configuration, DatabaseType type)
     {
         if (plugin == null)
             throw new IllegalArgumentException(
@@ -35,8 +36,14 @@ public final class MySQLDatabase implements Database
                     "Database configuration cannot be null"
             );
 
+        if (type != DatabaseType.MYSQL && type != DatabaseType.MARIADB)
+            throw new IllegalArgumentException(
+                    "MySQLDatabase requires MYSQL or MARIADB database type"
+            );
+
         this.taskManager = taskManager;
         this.configuration = configuration;
+        this.type = type;
     }
 
     @Override
@@ -162,9 +169,7 @@ public final class MySQLDatabase implements Database
     }
 
     @Override
-    public CompletableFuture<Void> transactionAsync(
-            DatabaseOperation transaction
-    )
+    public CompletableFuture<Void> transactionAsync(DatabaseOperation transaction)
     {
         return taskManager.runAsyncFuture(
                 () -> transaction(transaction)
@@ -245,7 +250,7 @@ public final class MySQLDatabase implements Database
     @Override
     public DatabaseType getType()
     {
-        return DatabaseType.MYSQL;
+        return type;
     }
 
     private void bindParameters(PreparedStatement statement, Object... parameters)
@@ -267,6 +272,17 @@ public final class MySQLDatabase implements Database
 
     private Connection createConnection() throws SQLException
     {
+        try
+        {
+            Class.forName("org.mariadb.jdbc.Driver");
+        }
+        catch (ClassNotFoundException e)
+        {
+            throw new DatabaseException(
+                    "MariaDB JDBC Driver was not found", e
+            );
+        }
+
         return DriverManager.getConnection(
                 "jdbc:mariadb://" +
                         configuration.getHost() +
