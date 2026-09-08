@@ -12,7 +12,7 @@ public final class SQLiteDatabase implements Database
 {
     private final File databaseFile;
     private final TaskManager taskManager;
-    private boolean connected;
+    private DatabaseState state = DatabaseState.DISCONNECTED;
 
     public SQLiteDatabase(JavaPlugin plugin, TaskManager taskManager, String fileName)
     {
@@ -208,28 +208,29 @@ public final class SQLiteDatabase implements Database
     @Override
     public void connect()
     {
-        if (connected)
+        if (state == DatabaseState.CONNECTED)
             return;
+
+        if (state == DatabaseState.CLOSED)
+            throw new DatabaseException(
+                    "Database has been closed"
+            );
+
 
         try
         {
             File parent = databaseFile.getParentFile();
 
-            if (parent != null &&
-                    !parent.exists() &&
-                    !parent.mkdirs())
-            {
+            if (parent != null && !parent.exists() && !parent.mkdirs())
                 throw new DatabaseException(
                         "Could not create database directory: " + parent
                 );
-            }
 
-            try (Connection connection =
-                         DriverManager.getConnection(
+            try (Connection connection = DriverManager.getConnection(
                                  "jdbc:sqlite:" + databaseFile.getAbsolutePath()
                          ))
             {
-                connected = true;
+                state = DatabaseState.CONNECTED;
             }
         }
         catch (SQLException e)
@@ -243,19 +244,16 @@ public final class SQLiteDatabase implements Database
     @Override
     public void disconnect()
     {
-        connected = false;
+        if (state == DatabaseState.CLOSED)
+            return;
+
+        state = DatabaseState.DISCONNECTED;
     }
 
     @Override
     public boolean isConnected()
     {
-        return connected;
-    }
-
-    @Override
-    public DatabaseType getType()
-    {
-        return DatabaseType.SQLITE;
+        return state == DatabaseState.CONNECTED;
     }
 
     private void bindParameters(PreparedStatement statement, Object... parameters)
@@ -281,5 +279,16 @@ public final class SQLiteDatabase implements Database
     public File getDatabaseFile()
     {
         return databaseFile;
+    }
+
+    public DatabaseState getState()
+    {
+        return state;
+    }
+
+    @Override
+    public DatabaseType getType()
+    {
+        return DatabaseType.SQLITE;
     }
 }
