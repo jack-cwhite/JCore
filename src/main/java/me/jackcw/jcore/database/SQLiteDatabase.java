@@ -122,27 +122,24 @@ public final class SQLiteDatabase implements Database
     @Override
     public CompletableFuture<DatabaseResult> queryAsync(String sql, Object... parameters)
     {
-        return CompletableFuture.supplyAsync(
-                () -> withConnection(connection ->
-                {
-                    try (PreparedStatement statement = connection.prepareStatement(sql))
-                    {
-                        bindParameters(statement, parameters);
+        return taskManager.submitAsync(() -> withConnection((connection ->
+        {
+            try (PreparedStatement statement = connection.prepareStatement(sql))
+            {
+                bindParameters(statement, parameters);
 
-                        try (ResultSet resultSet = statement.executeQuery())
-                        {
-                            return new DatabaseResult(resultSet);
-                        }
-                    }
-                    catch (SQLException e)
-                    {
-                        throw new DatabaseException(
-                                "Could not execute database query: " + sql, e
-                        );
-                    }
-                }),
-                taskManager.executorService()
-        );
+                try (ResultSet resultSet = statement.executeQuery())
+                {
+                    return new DatabaseResult(resultSet);
+                }
+            }
+            catch (SQLException e)
+            {
+                throw new DatabaseException(
+                        "Could not execute database query: " + sql, e
+                );
+            }
+        })));
     }
 
     @Override
