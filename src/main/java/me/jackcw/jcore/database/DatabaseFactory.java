@@ -29,6 +29,9 @@ public final class DatabaseFactory
         return switch(configuration.getType())
         {
             case SQLITE -> new SQLiteDatabase(plugin, taskManager, ((SQLiteConfiguration) configuration.getSettings()).getFileName());
+
+            case MYSQL, MARIADB -> new MySQLDatabase(plugin, taskManager, (MySQLConfiguration) configuration.getSettings()
+            );
         };
     }
 }

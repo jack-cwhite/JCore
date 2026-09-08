@@ -25,6 +25,11 @@ public final class DatabaseConfiguration
                             "SQLite database requires SQLiteConfiguration"
                     );
                 break;
+            case MYSQL, MARIADB:
+                if (!(settings instanceof MySQLConfiguration))
+                    throw new IllegalArgumentException(
+                            "MySQL/MariaDB database required MySQLConfiguration"
+                    );
         }
 
         this.type = type;

@@ -2,5 +2,7 @@ package me.jackcw.jcore.database;
 
 public enum DatabaseType
 {
-    SQLITE
+    SQLITE,
+    MYSQL,
+    MARIADB
 }
