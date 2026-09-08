@@ -25,7 +25,7 @@ public final class JCore
 
     public static JCore create(JavaPlugin plugin)
     {
-        return create(plugin, new DatabaseConfiguration(DatabaseType.SQLITE, "database.db"));
+        return create(plugin, new DatabaseConfiguration(DatabaseType.SQLITE, new SQLiteConfiguration("database.db")));
     }
 
     public static JCore create(JavaPlugin plugin, DatabaseConfiguration databaseConfiguration)

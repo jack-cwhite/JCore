@@ -3,22 +3,22 @@ package me.jackcw.jcore.database;
 public final class DatabaseConfiguration
 {
     private final DatabaseType type;
-    private final String fileName;
+    private final Object settings;
 
-    public DatabaseConfiguration(DatabaseType type, String fileName)
+    public DatabaseConfiguration(DatabaseType type, Object settings)
     {
         if (type == null)
             throw new IllegalArgumentException(
                     "Database type cannot be null"
             );
 
-        if (fileName == null || fileName.isBlank())
+        if (settings == null)
             throw new IllegalArgumentException(
-                    "Database file name cannot be null"
+                    "Database settings cannot be null"
             );
 
         this.type = type;
-        this.fileName = fileName;
+        this.settings = settings;
     }
 
     public DatabaseType getType()
@@ -26,8 +26,8 @@ public final class DatabaseConfiguration
         return type;
     }
 
-    public String getFileName()
+    public Object getSettings()
     {
-        return fileName;
+        return settings;
     }
 }

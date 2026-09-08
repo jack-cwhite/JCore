@@ -28,7 +28,7 @@ public final class DatabaseFactory
 
         return switch(configuration.getType())
         {
-            case SQLITE -> new SQLiteDatabase(plugin, taskManager, configuration.getFileName());
+            case SQLITE -> new SQLiteDatabase(plugin, taskManager, ((SQLiteConfiguration) configuration.getSettings()).getFileName());
         };
     }
 }
