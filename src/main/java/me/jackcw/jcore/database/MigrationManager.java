@@ -43,12 +43,15 @@ public final class MigrationManager
     {
         createMigrationTable();
 
+        int currentVersion = getCurrentVersion();
+
         for (Migration migration : migrations)
         {
             if (migration.getVersion() <= getCurrentVersion())
                 continue;
 
             applyMigration(migration);
+            currentVersion = migration.getVersion();
         }
     }
 
