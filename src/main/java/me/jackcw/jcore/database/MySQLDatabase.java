@@ -272,19 +272,35 @@ public final class MySQLDatabase implements Database
 
     private Connection createConnection() throws SQLException
     {
+        String driver;
+        String protocol;
+
+        if (type == DatabaseType.MARIADB)
+        {
+            driver = "org.mariadb.jdbc.Driver";
+            protocol = "mariadb";
+        }
+        else
+        {
+            driver = "com.mysql.cj.jdbc.Driver";
+            protocol = "mysql";
+        }
+
         try
         {
-            Class.forName("org.mariadb.jdbc.Driver");
+            Class.forName(driver);
         }
         catch (ClassNotFoundException e)
         {
             throw new DatabaseException(
-                    "MariaDB JDBC Driver was not found", e
+                    "JDBC Driver was not found: " + driver, e
             );
         }
 
         return DriverManager.getConnection(
-                "jdbc:mariadb://" +
+                "jdbc:" +
+                        protocol +
+                        "://" +
                         configuration.getHost() +
                         ":" +
                         configuration.getPort() +
