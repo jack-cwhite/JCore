@@ -43,6 +43,7 @@ public final class JCore
             return;
 
         database.connect();
+        migrationManager.migrate();
 
         initialized = true;
     }
