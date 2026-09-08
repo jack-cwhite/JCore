@@ -47,7 +47,7 @@ public final class MigrationManager
 
         for (Migration migration : migrations)
         {
-            if (migration.getVersion() <= getCurrentVersion())
+            if (migration.getVersion() <= currentVersion)
                 continue;
 
             applyMigration(migration);
