@@ -73,9 +73,7 @@ public final class SQLiteDatabase implements Database
             );
         }
 
-        try (Connection connection = DriverManager.getConnection(
-                "jdbc:sqlite:" + databaseFile.getAbsolutePath()
-        ))
+        try (Connection connection = createConnection())
         {
             try
             {
@@ -165,9 +163,7 @@ public final class SQLiteDatabase implements Database
             );
         }
 
-        try (Connection connection = DriverManager.getConnection(
-                "jdbc:sqlite:" + databaseFile.getAbsolutePath()
-        ))
+        try (Connection connection = createConnection())
         {
             return operation.apply(connection);
         }
@@ -190,10 +186,7 @@ public final class SQLiteDatabase implements Database
             );
         }
 
-        try (Connection connection =
-                     DriverManager.getConnection(
-                             "jdbc:sqlite:" + databaseFile.getAbsolutePath()
-                     ))
+        try (Connection connection = createConnection())
         {
             operation.accept(connection);
         }
@@ -216,27 +209,21 @@ public final class SQLiteDatabase implements Database
                     "Database has been closed"
             );
 
+        File parent = databaseFile.getParentFile();
 
-        try
+        if (parent != null && !parent.exists() && !parent.mkdirs())
+            throw new DatabaseException(
+                    "Could not create database directory: " + parent
+            );
+
+        try (Connection connection = createConnection())
         {
-            File parent = databaseFile.getParentFile();
-
-            if (parent != null && !parent.exists() && !parent.mkdirs())
-                throw new DatabaseException(
-                        "Could not create database directory: " + parent
-                );
-
-            try (Connection connection = DriverManager.getConnection(
-                                 "jdbc:sqlite:" + databaseFile.getAbsolutePath()
-                         ))
-            {
-                state = DatabaseState.CONNECTED;
-            }
+            state = DatabaseState.CONNECTED;
         }
         catch (SQLException e)
         {
             throw new DatabaseException(
-                    "Could not connect to the SQLite database: " + databaseFile.getAbsolutePath(), e
+                    "Could not connect to SQLite database: " + databaseFile.getAbsolutePath(), e
             );
         }
     }
@@ -274,6 +261,11 @@ public final class SQLiteDatabase implements Database
                     "Could not bind database parameters", e
             );
         }
+    }
+
+    private Connection createConnection() throws SQLException
+    {
+            return DriverManager.getConnection("jdbc:sqlite:" + databaseFile.getAbsolutePath());
     }
 
     public File getDatabaseFile()
