@@ -1,6 +1,5 @@
 package me.jackcw.jcore.storage;
 
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -8,6 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 public final class YamlFile
 {
@@ -153,28 +153,68 @@ public final class YamlFile
         }
     }
 
-    private boolean mergeDefaults(ConfigurationSection defaults, ConfigurationSection target)
+    public String getString(String path)
     {
-        boolean changed = false;
+        return getConfig().getString(path);
+    }
 
-        for (String key : defaults.getKeys(false))
-        {
-            if (!target.contains(key))
-            {
-                target.set(key, defaults.get(key));
-                changed = true;
-                continue;
-            }
+    public String getString(String path, String def)
+    {
+        return getConfig().getString(path, def);
+    }
 
-            if (defaults.isConfigurationSection(key) && target.isConfigurationSection(key))
-            {
-                boolean nestedChanged = mergeDefaults(defaults.getConfigurationSection(key), target.getConfigurationSection(key));
+    public int getInt(String path)
+    {
+        return getConfig().getInt(path);
+    }
 
-                if (nestedChanged)
-                    changed = true;
-            }
-        }
+    public int getInt(String path, int def)
+    {
+        return getConfig().getInt(path, def);
+    }
 
-        return changed;
+    public boolean getBoolean(String path)
+    {
+        return getConfig().getBoolean(path);
+    }
+
+    public boolean getBoolean(String path, boolean def)
+    {
+        return getConfig().getBoolean(path, def);
+    }
+
+    public long getLong(String path)
+    {
+        return getConfig().getLong(path);
+    }
+
+    public long getLong(String path, long def)
+    {
+        return getConfig().getLong(path, def);
+    }
+
+    public double getDouble(String path)
+    {
+        return getConfig().getDouble(path);
+    }
+
+    public double getDouble(String path, double def)
+    {
+        return getConfig().getDouble(path, def);
+    }
+
+    public boolean contains(String path)
+    {
+        return getConfig().contains(path);
+    }
+
+    public List<String> getStringList(String path)
+    {
+        return getConfig().getStringList(path);
+    }
+
+    public void set(String path, Object value)
+    {
+        getConfig().set(path, value);
     }
 }
