@@ -7,9 +7,11 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -283,5 +285,29 @@ public final class YamlFile
         }
 
         return converted;
+    }
+
+    public boolean mergeDefaults(String defaults)
+    {
+        if (defaults == null)
+            throw new IllegalArgumentException(
+                    "Defaults cannot be null"
+            );
+
+        YamlDefaultsMerger merger = new YamlDefaultsMerger();
+
+        try (InputStream stream = new ByteArrayInputStream(defaults.getBytes(StandardCharsets.UTF_8)))
+        {
+            boolean changed = merger.merge(file, stream);
+
+            if (changed)
+                reload();
+
+            return changed;
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }

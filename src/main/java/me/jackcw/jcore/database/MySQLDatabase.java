@@ -16,7 +16,7 @@ public final class MySQLDatabase implements Database
     private final MySQLConfiguration configuration;
     private final TaskManager taskManager;
     private final DatabaseType type;
-
+    private final ThreadLocal<Connection> transactionConnection = new ThreadLocal<>();
     private DatabaseState state = DatabaseState.DISCONNECTED;
 
     public MySQLDatabase(JavaPlugin plugin, TaskManager taskManager, MySQLConfiguration configuration, DatabaseType type)
@@ -104,6 +104,8 @@ public final class MySQLDatabase implements Database
             {
                 connection.setAutoCommit(false);
 
+                transactionConnection.set(connection);
+
                 transaction.execute(connection);
 
                 connection.commit();
@@ -119,12 +121,13 @@ public final class MySQLDatabase implements Database
                     e.addSuppressed(rollbackException);
                 }
 
-                if (e instanceof DatabaseException databaseException)
-                    throw databaseException;
-
                 throw new DatabaseException(
                         "Database transaction failed", e
                 );
+            }
+            finally
+            {
+                transactionConnection.remove();
             }
         }
         catch (SQLException e)
@@ -184,6 +187,13 @@ public final class MySQLDatabase implements Database
             throw new DatabaseException(
                     "Database not connected"
             );
+        }
+
+        Connection existingConnection = transactionConnection.get();
+
+        if (existingConnection != null)
+        {
+            return operation.apply(existingConnection);
         }
 
         try (Connection connection = createConnection())

@@ -30,6 +30,7 @@ public final class DatabaseConfiguration
                     throw new IllegalArgumentException(
                             "MySQL/MariaDB database required MySQLConfiguration"
                     );
+                break;
             case POSTGRESQL:
                 if (!(settings instanceof PostgreSQLConfiguration))
                     throw new IllegalArgumentException(

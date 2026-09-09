@@ -12,6 +12,7 @@ public final class SQLiteDatabase implements Database
 {
     private final File databaseFile;
     private final TaskManager taskManager;
+    private final ThreadLocal<Connection> transactionConnection = new ThreadLocal<>();
     private DatabaseState state = DatabaseState.DISCONNECTED;
 
     public SQLiteDatabase(JavaPlugin plugin, TaskManager taskManager, String fileName)
@@ -79,6 +80,8 @@ public final class SQLiteDatabase implements Database
             {
                 connection.setAutoCommit(false);
 
+                transactionConnection.set(connection);
+
                 transaction.execute(connection);
 
                 connection.commit();
@@ -94,12 +97,13 @@ public final class SQLiteDatabase implements Database
                     e.addSuppressed(rollbackException);
                 }
 
-                if (e instanceof DatabaseException databaseException)
-                    throw databaseException;
-
                 throw new DatabaseException(
                         "Database transaction failed", e
                 );
+            }
+            finally
+            {
+                transactionConnection.remove();
             }
         }
         catch (SQLException e)
@@ -109,7 +113,6 @@ public final class SQLiteDatabase implements Database
             );
         }
     }
-
 
     @Override
     public CompletableFuture<Integer> executeAsync(String sql, Object... parameters)
@@ -159,6 +162,11 @@ public final class SQLiteDatabase implements Database
             );
         }
 
+        Connection existingConnection = transactionConnection.get();
+
+        if (existingConnection != null)
+            return operation.apply(existingConnection);
+
         try (Connection connection = createConnection())
         {
             return operation.apply(connection);
@@ -166,8 +174,7 @@ public final class SQLiteDatabase implements Database
         catch (SQLException e)
         {
             throw new DatabaseException(
-                    "Could not execute database operation",
-                    e
+                    "Could not execute database operation", e
             );
         }
     }

@@ -15,7 +15,7 @@ public final class PostgreSQLDatabase implements Database
 {
     private final PostgreSQLConfiguration configuration;
     private final TaskManager taskManager;
-
+    private final ThreadLocal<Connection> transactionConnection = new ThreadLocal<>();
     private DatabaseState state = DatabaseState.DISCONNECTED;
 
     public PostgreSQLDatabase(JavaPlugin plugin, TaskManager taskManager, PostgreSQLConfiguration configuration)
@@ -97,6 +97,8 @@ public final class PostgreSQLDatabase implements Database
             {
                 connection.setAutoCommit(false);
 
+                transactionConnection.set(connection);
+
                 transaction.execute(connection);
 
                 connection.commit();
@@ -112,12 +114,13 @@ public final class PostgreSQLDatabase implements Database
                     e.addSuppressed(rollbackException);
                 }
 
-                if (e instanceof DatabaseException databaseException)
-                    throw databaseException;
-
                 throw new DatabaseException(
                         "Database transaction failed", e
                 );
+            }
+            finally
+            {
+                transactionConnection.remove();
             }
         }
         catch (SQLException e)
@@ -179,6 +182,13 @@ public final class PostgreSQLDatabase implements Database
             throw new DatabaseException(
                     "Database not connected"
             );
+        }
+
+        Connection existingConnection = transactionConnection.get();
+
+        if (existingConnection != null)
+        {
+            return operation.apply(existingConnection);
         }
 
         try (Connection connection = createConnection())
