@@ -1,0 +1,10 @@
+name: JCoreTest
+version: 1.0
+main: me.jackcw.jcore.TestPlugin
+api-version: '1.21'
+
+commands:
+  test:
+    description: Test command
+    aliases:
+      - t
