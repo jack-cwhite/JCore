@@ -1,8 +1,11 @@
 package me.jackcw.jcore;
 
 import me.jackcw.jcore.database.*;
+import me.jackcw.jcore.serialization.ItemStackSerializer;
+import me.jackcw.jcore.serialization.SerializerManager;
 import me.jackcw.jcore.storage.FileManager;
 import me.jackcw.jcore.task.TaskManager;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -15,6 +18,7 @@ public final class JCore
     private final Database database;
     private final MigrationManager migrationManager;
     private final DatabaseConfiguration databaseConfiguration;
+    private final SerializerManager serializerManager;
 
     private boolean initialized;
 
@@ -22,10 +26,13 @@ public final class JCore
     {
         this.plugin = plugin;
         this.taskManager = new TaskManager(plugin);
-        this.fileManager = new FileManager(plugin);
         this.database = DatabaseFactory.create(plugin, taskManager, databaseConfiguration);
         this.migrationManager = new MigrationManager(database);
         this.databaseConfiguration = databaseConfiguration;
+        this.serializerManager = new SerializerManager();
+        this.fileManager = new FileManager(plugin, serializers());
+
+        serializerManager.register(ItemStack.class, new ItemStackSerializer());
     }
 
     public static JCore create(JavaPlugin plugin)
@@ -98,6 +105,11 @@ public final class JCore
     public DatabaseConfiguration databaseConfiguration()
     {
         return databaseConfiguration;
+    }
+
+    public SerializerManager serializers()
+    {
+        return serializerManager;
     }
 
     public JavaPlugin plugin()

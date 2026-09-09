@@ -1,5 +1,8 @@
 package me.jackcw.jcore.storage;
 
+import me.jackcw.jcore.serialization.Serializer;
+import me.jackcw.jcore.serialization.SerializerManager;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -7,23 +10,27 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class YamlFile
 {
     private final JavaPlugin plugin;
+    private final SerializerManager serializerManager;
     private final String name;
     private final File file;
     private final boolean copyResource;
 
     private FileConfiguration config;
 
-    public YamlFile(JavaPlugin plugin, String name)
+    public YamlFile(JavaPlugin plugin, SerializerManager serializerManager, String name)
     {
-        this(plugin, name, false);
+        this(plugin, serializerManager, name, false);
     }
 
-    public YamlFile(JavaPlugin plugin, String name, boolean copyResource)
+    public YamlFile(JavaPlugin plugin, SerializerManager serializerManager, String name, boolean copyResource)
     {
         if (plugin == null)
             throw new IllegalArgumentException(
@@ -39,6 +46,7 @@ public final class YamlFile
         this.name = name;
         this.file = new File(plugin.getDataFolder(), name);
         this.copyResource = copyResource;
+        this.serializerManager = serializerManager;
 
         load();
     }
@@ -216,5 +224,66 @@ public final class YamlFile
     public void set(String path, Object value)
     {
         getConfig().set(path, value);
+    }
+
+    public <T> T get(String path, Class<T> type)
+    {
+        Object value = getConfig().get(path);
+
+        if (value == null)
+            return null;
+
+        if (type.isInstance(value))
+            return type.cast(value);
+
+        Serializer<T> serializer = serializerManager.get(type);
+
+        if (serializer != null)
+        {
+            if (value instanceof ConfigurationSection section)
+                value = sectionToMap(section);
+
+            return serializer.deserialize(value);
+        }
+
+        throw new IllegalStateException(
+                "Value at '" + path + "'is not of type " + type.getName()
+        );
+    }
+
+    private Map<String, Object> sectionToMap(ConfigurationSection section)
+    {
+        Map<String, Object> map = new HashMap<>();
+
+        for (String key : section.getKeys(false))
+        {
+            Object value = section.get(key);
+
+            if (value instanceof ConfigurationSection child)
+                value = sectionToMap(child);
+            else if (value instanceof List<?> list)
+                value = convertList(list);
+
+            map.put(key, value);
+        }
+
+        return map;
+    }
+
+    private List<Object> convertList(List<?> list)
+    {
+        List<Object> converted = new ArrayList<>();
+
+        for (Object value : list)
+        {
+            if (value instanceof ConfigurationSection section)
+                converted.add(sectionToMap(section));
+            else if (value instanceof List<?> nestedList)
+                converted.add(convertList(nestedList));
+            else
+                converted.add(value);
+        }
+
+        return converted;
     }
 }
