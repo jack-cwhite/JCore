@@ -58,6 +58,66 @@ public class SerializerManagerTest
         );
     }
 
+    @Test
+    void serializeUsesRegisteredSerializer()
+    {
+        SerializerManager manager = new SerializerManager();
+        ItemStackTestData value = new ItemStackTestData();
+
+        manager.register(ItemStackTestData.class, new ItemStackTestSerializer());
+
+        Object result = manager.serialize(value);
+
+        assertSame(value, result);
+    }
+
+    @Test
+    void deserializeUsesRegisteredSerializer()
+    {
+        SerializerManager manager = new SerializerManager();
+        ItemStackTestData value = new ItemStackTestData();
+
+        manager.register(ItemStackTestData.class, new ItemStackTestSerializer());
+
+        ItemStackTestData result = manager.deserialize(value, ItemStackTestData.class);
+
+        assertSame(value, result);
+    }
+
+    @Test
+    void serializeThrowsForUnregisteredType()
+    {
+        SerializerManager manager = new SerializerManager();
+        ItemStackTestData value = new ItemStackTestData();
+
+        assertThrows(IllegalStateException.class, () -> manager.serialize(value));
+    }
+
+    @Test
+    void deserializeThrowsForUnregisteredType()
+    {
+        SerializerManager manager = new SerializerManager();
+        ItemStackTestData value = new ItemStackTestData();
+
+        assertThrows(IllegalStateException.class, () -> manager.deserialize(value, ItemStackTestData.class));
+    }
+
+    @Test
+    void serializeNullReturnsNull()
+    {
+        SerializerManager manager = new SerializerManager();
+
+        assertNull(manager.serialize(null));
+    }
+
+    @Test
+    void deserializeNullReturnsNull()
+    {
+        SerializerManager manager = new SerializerManager();
+
+        assertNull(manager.deserialize(null, ItemStackTestData.class));
+    }
+
     private static class ItemStackTestData
     {
     }
@@ -67,13 +127,13 @@ public class SerializerManagerTest
         @Override
         public Object serialize(ItemStackTestData value)
         {
-            return null;
+            return value;
         }
 
         @Override
         public ItemStackTestData deserialize(Object value)
         {
-            return null;
+            return (ItemStackTestData) value;
         }
     }
 }

@@ -19,6 +19,49 @@ public final class SerializerManager
         serializers.put(type, serializer);
     }
 
+    public Object serialize(Object value)
+    {
+        if (value == null)
+            return null;
+
+        Serializer<Object> serializer = getSerializer(value.getClass());
+
+        return serializer.serialize(value);
+    }
+
+    public <T> T deserialize(Object value, Class<T> type)
+    {
+        if (type == null)
+            throw new IllegalArgumentException(
+                    "Type cannote be null"
+            );
+
+        if (value == null)
+            return null;
+
+        Serializer<T> serializer = get(type);
+
+        if (serializer == null)
+            throw new IllegalStateException(
+                    "No serializer registered for " + type.getName()
+            );
+
+        return serializer.deserialize(value);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Serializer<Object> getSerializer(Class<?> type)
+    {
+        Serializer<?> serializer = serializers.get(type);
+
+        if (serializer == null)
+            throw new IllegalStateException(
+                    "No serializer registered for " + type.getName()
+            );
+
+        return (Serializer<Object>) serializer;
+    }
+
     @SuppressWarnings("unchecked")
     public <T> Serializer<T> get(Class<T> type)
     {
