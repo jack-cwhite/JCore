@@ -1,10 +1,14 @@
 package me.jackcw.jcore;
 
 import me.jackcw.jcore.database.*;
+import me.jackcw.jcore.serialization.InventorySerializer;
 import me.jackcw.jcore.serialization.ItemStackSerializer;
+import me.jackcw.jcore.serialization.LocationSerializer;
 import me.jackcw.jcore.serialization.SerializerManager;
 import me.jackcw.jcore.storage.FileManager;
 import me.jackcw.jcore.task.TaskManager;
+import org.bukkit.Location;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -33,6 +37,8 @@ public final class JCore
         this.fileManager = new FileManager(plugin, serializers());
 
         serializerManager.register(ItemStack.class, new ItemStackSerializer());
+        serializerManager.register(Location.class, new LocationSerializer());
+        serializerManager.register(Inventory.class, new InventorySerializer());
     }
 
     public static JCore create(JavaPlugin plugin)

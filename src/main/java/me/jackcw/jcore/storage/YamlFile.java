@@ -233,18 +233,16 @@ public final class YamlFile
         if (value == null)
             return null;
 
+        if (value instanceof ConfigurationSection section)
+            value = sectionToMap(section);
+
         if (type.isInstance(value))
             return type.cast(value);
 
         Serializer<T> serializer = serializerManager.get(type);
 
         if (serializer != null)
-        {
-            if (value instanceof ConfigurationSection section)
-                value = sectionToMap(section);
-
             return serializer.deserialize(value);
-        }
 
         throw new IllegalStateException(
                 "Value at '" + path + "'is not of type " + type.getName()
