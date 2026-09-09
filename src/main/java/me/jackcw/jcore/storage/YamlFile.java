@@ -1,11 +1,13 @@
 package me.jackcw.jcore.storage;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 public final class YamlFile
 {
@@ -128,5 +130,51 @@ public final class YamlFile
                     "Could not copy resource " + name, e
             );
         }
+    }
+
+    public boolean updateDefaults()
+    {
+        if (!file.exists())
+            createFile();
+
+        try (InputStream resource = plugin.getResource(name))
+        {
+            if (resource == null)
+                return false;
+
+            return new YamlDefaultsMerger().merge(file, resource);
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(
+                    "Could not read defaults for " + name,
+                    e
+            );
+        }
+    }
+
+    private boolean mergeDefaults(ConfigurationSection defaults, ConfigurationSection target)
+    {
+        boolean changed = false;
+
+        for (String key : defaults.getKeys(false))
+        {
+            if (!target.contains(key))
+            {
+                target.set(key, defaults.get(key));
+                changed = true;
+                continue;
+            }
+
+            if (defaults.isConfigurationSection(key) && target.isConfigurationSection(key))
+            {
+                boolean nestedChanged = mergeDefaults(defaults.getConfigurationSection(key), target.getConfigurationSection(key));
+
+                if (nestedChanged)
+                    changed = true;
+            }
+        }
+
+        return changed;
     }
 }
