@@ -213,15 +213,25 @@ public class CommandManager implements CommandExecutor
             return Collections.emptyList();
 
         CommandNode node = root;
+        int argumentIndex = 0;
+        boolean consumingArguments = false;
 
         for (int i = 0; i < args.length - 1; i++)
         {
-            CommandNode child = findChild(node, args[i]);
+            if (!consumingArguments)
+            {
+                CommandNode child = findChild(node, args[i]);
 
-            if (child == null)
-                return Collections.emptyList();
+                if (child != null)
+                {
+                    node = child;
+                    continue;
+                }
 
-            node = child;
+                consumingArguments = true;
+            }
+
+            argumentIndex++;
         }
 
         String current = args.length > 0
@@ -229,10 +239,18 @@ public class CommandManager implements CommandExecutor
                 : "";
 
         List<String> completions = new ArrayList<>();
+        
+        if (!consumingArguments)
+            for (CommandNode child : node.getChildren())
+                if (child.getName().toLowerCase().startsWith(current.toLowerCase()))
+                    completions.add(child.getName());
 
-        for (CommandNode child : node.getChildren())
-            if (child.getName().toLowerCase().startsWith(current.toLowerCase()))
-                completions.add(child.getName());
+        List<CommandArgument<?>> arguments = node.getArguments();
+
+        if (argumentIndex < arguments.size())
+            completions.addAll(
+                    arguments.get(argumentIndex).getType().suggest(sender, current)
+            );
 
         return completions;
     }

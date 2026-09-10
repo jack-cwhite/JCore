@@ -4,12 +4,15 @@ import me.jackcw.jcore.TestPlugin;
 import me.jackcw.jcore.TestUtils;
 import me.jackcw.jcore.message.MessageManager;
 import me.jackcw.jcore.storage.YamlFile;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -340,5 +343,132 @@ class CommandManagerTest
                 42,
                 receivedAmount.get()
         );
+    }
+
+    @Test
+    void suggestsMatchingChildCommandNames()
+    {
+        CommandNode command = CommandBuilder.command("test")
+                .child(CommandBuilder.command("add").executes(context -> {}))
+                .child(CommandBuilder.command("remove").executes(context -> {}))
+                .build();
+
+        commandManager.register(command);
+
+        PluginCommand bukkitCommand = plugin.getCommand("test");
+
+        assertEquals(
+                List.of("add"),
+                bukkitCommand.tabComplete(server.getConsoleSender(), "test", new String[]{"a"})
+        );
+    }
+
+    @Test
+    void suggestsArgumentValues()
+    {
+        ArgumentType<String> color = new ArgumentType<>()
+        {
+            @Override
+            public String parse(String input)
+            {
+                return input;
+            }
+
+            @Override
+            public List<String> suggest(CommandSender sender, String partial)
+            {
+                return List.of("red", "blue", "green").stream()
+                        .filter(value -> value.startsWith(partial))
+                        .toList();
+            }
+        };
+
+        CommandNode command = CommandBuilder.command("test")
+                .argument("color", color)
+                .executes(context -> {})
+                .build();
+
+        commandManager.register(command);
+
+        PluginCommand bukkitCommand = plugin.getCommand("test");
+
+        assertEquals(
+                List.of("red"),
+                bukkitCommand.tabComplete(server.getConsoleSender(), "test", new String[]{"r"})
+        );
+    }
+
+    @Test
+    void suggestsChildrenAndArgumentTogetherAtAmbiguousPosition()
+    {
+        ArgumentType<String> color = new ArgumentType<>()
+        {
+            @Override
+            public String parse(String input)
+            {
+                return input;
+            }
+
+            @Override
+            public List<String> suggest(CommandSender sender, String partial)
+            {
+                return List.of("aqua").stream()
+                        .filter(value -> value.startsWith(partial))
+                        .toList();
+            }
+        };
+
+        CommandNode command = CommandBuilder.command("test")
+                .child(CommandBuilder.command("add").executes(context -> {}))
+                .argument("color", color)
+                .executes(context -> {})
+                .build();
+
+        commandManager.register(command);
+
+        PluginCommand bukkitCommand = plugin.getCommand("test");
+
+        List<String> completions = bukkitCommand.tabComplete(
+                server.getConsoleSender(), "test", new String[]{"a"}
+        );
+
+        assertTrue(completions.contains("add"));
+        assertTrue(completions.contains("aqua"));
+    }
+
+    @Test
+    void stopsSuggestingChildrenOnceArgumentsAreBeingConsumed()
+    {
+        ArgumentType<String> color = new ArgumentType<>()
+        {
+            @Override
+            public String parse(String input)
+            {
+                return input;
+            }
+
+            @Override
+            public List<String> suggest(CommandSender sender, String partial)
+            {
+                return List.of("red", "blue");
+            }
+        };
+
+        CommandNode command = CommandBuilder.command("test")
+                .child(CommandBuilder.command("add").executes(context -> {}))
+                .argument("color", color)
+                .argument("shade", ArgumentTypes.string())
+                .executes(context -> {})
+                .build();
+
+        commandManager.register(command);
+
+        PluginCommand bukkitCommand = plugin.getCommand("test");
+
+        List<String> completions = bukkitCommand.tabComplete(
+                server.getConsoleSender(), "test", new String[]{"notachild", ""}
+        );
+
+        assertTrue(completions.isEmpty());
     }
 }
