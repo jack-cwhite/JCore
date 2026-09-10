@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -87,6 +88,20 @@ class TaskManagerTest
         MockBukkit.getMock().getScheduler().performOneTick();
 
         assertTrue(ran.get());
+    }
+
+    @Test
+    void runSyncTimerFiresRepeatedly()
+    {
+        AtomicInteger runs = new AtomicInteger();
+
+        var task = taskManager.runSyncTimer(runs::incrementAndGet, 0L, 1L);
+
+        MockBukkit.getMock().getScheduler().performTicks(3);
+
+        assertTrue(runs.get() >= 3);
+
+        task.cancel();
     }
 
     @Test

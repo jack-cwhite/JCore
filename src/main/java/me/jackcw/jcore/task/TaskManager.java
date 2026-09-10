@@ -1,6 +1,7 @@
 package me.jackcw.jcore.task;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.concurrent.*;
 
@@ -51,6 +52,16 @@ public final class TaskManager
         plugin.getServer().getScheduler().runTask(
                 plugin,
                 task
+        );
+    }
+
+    public BukkitTask runSyncTimer(Runnable task, long delayTicks, long periodTicks)
+    {
+        return plugin.getServer().getScheduler().runTaskTimer(
+                plugin,
+                task,
+                delayTicks,
+                periodTicks
         );
     }
 
