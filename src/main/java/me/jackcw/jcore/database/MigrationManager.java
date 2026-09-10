@@ -7,17 +7,31 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public final class MigrationManager
 {
-    private static final String MIGRATION_TABLE = "jcore_migrations";
+    private static final String DEFAULT_MIGRATION_TABLE = "jcore_migrations";
+    private static final Pattern VALID_TABLE_NAME = Pattern.compile("[A-Za-z0-9_]+");
 
     private final Database database;
+    private final String migrationTable;
     private final List<Migration> migrations = new ArrayList<>();
 
     public MigrationManager(Database database)
     {
+        this(database, DEFAULT_MIGRATION_TABLE);
+    }
+
+    public MigrationManager(Database database, String migrationTable)
+    {
+        if (migrationTable == null || !VALID_TABLE_NAME.matcher(migrationTable).matches())
+            throw new IllegalArgumentException(
+                    "Migration table name must only contain letters, digits and underscores"
+            );
+
         this.database = database;
+        this.migrationTable = migrationTable;
     }
 
     public void add(Migration migration)
@@ -63,12 +77,10 @@ public final class MigrationManager
             try (Statement statement = connection.createStatement())
             {
                 statement.executeUpdate(
-                        """
-                        CREATE TABLE IF NOT EXISTS jcore_migrations (
-                            version INTEGER PRIMARY KEY,
-                            applied_at INTEGER NOT NULL
-                        )
-                        """
+                        "CREATE TABLE IF NOT EXISTS " + migrationTable + " (" +
+                                "version INTEGER PRIMARY KEY, " +
+                                "applied_at INTEGER NOT NULL" +
+                                ")"
                 );
             }
             catch (SQLException e)
@@ -86,7 +98,7 @@ public final class MigrationManager
     {
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(
-                     "SELECT MAX(version) FROM jcore_migrations"
+                     "SELECT MAX(version) FROM " + migrationTable
              ))
         {
             if (resultSet.next())
@@ -117,11 +129,8 @@ public final class MigrationManager
                 migration.getMigration().migrate(connection);
 
                 try (var statement = connection.prepareStatement(
-                        """
-                        INSERT INTO jcore_migrations
-                            (version, applied_at)
-                        VALUES (?, ?)
-                        """
+                        "INSERT INTO " + migrationTable +
+                                " (version, applied_at) VALUES (?, ?)"
                 ))
                 {
                     statement.setInt(
@@ -160,5 +169,10 @@ public final class MigrationManager
     public List<Migration> getMigrations()
     {
         return List.copyOf(migrations);
+    }
+
+    public String getMigrationTable()
+    {
+        return migrationTable;
     }
 }

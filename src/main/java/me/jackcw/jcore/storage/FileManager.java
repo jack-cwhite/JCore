@@ -30,12 +30,29 @@ public final class FileManager
 
     public YamlFile yaml(String name)
     {
-        return files.computeIfAbsent(name, key -> new YamlFile(plugin, serializerManager, key));
+        return yaml(name, false);
     }
 
     public YamlFile yaml(String name, boolean copyResource)
     {
-        return files.computeIfAbsent(name, key -> new YamlFile(plugin, serializerManager, key, copyResource));
+        YamlFile existing = files.get(name);
+
+        if (existing != null)
+        {
+            if (existing.isCopyResource() != copyResource)
+                throw new IllegalStateException(
+                        "'" + name + "' was already registered with copyResource=" +
+                                existing.isCopyResource() + ", requested copyResource=" +
+                                copyResource
+                );
+
+            return existing;
+        }
+
+        YamlFile file = new YamlFile(plugin, serializerManager, name, copyResource);
+        files.put(name, file);
+
+        return file;
     }
 
     public void saveAll()
