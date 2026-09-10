@@ -14,6 +14,11 @@ public final class LocationSerializer implements Serializer<Location>
         if (value == null)
             return null;
 
+        if (value.getWorld() == null)
+            throw new IllegalArgumentException(
+                    "Cannot serialize a Location with no world"
+            );
+
         return Map.of(
                 "world", value.getWorld().getName(),
                 "x", value.getX(),

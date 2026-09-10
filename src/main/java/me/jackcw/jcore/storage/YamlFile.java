@@ -102,6 +102,11 @@ public final class YamlFile
         return file;
     }
 
+    public boolean isCopyResource()
+    {
+        return copyResource;
+    }
+
     private void createFile()
     {
         try
