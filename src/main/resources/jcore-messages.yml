@@ -1,0 +1,6 @@
+core:
+  prefix: ""
+  no-permission: "&cYou do not have permission to use this command."
+  incorrect-usage: "&cUsage: {usage}"
+  player-only: "&cThis command can only be used by a player."
+  player-not-found: "&cThat player could not be found."
