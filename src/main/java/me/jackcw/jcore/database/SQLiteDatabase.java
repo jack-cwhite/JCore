@@ -44,6 +44,11 @@ public final class SQLiteDatabase extends AbstractDatabase
         // proceed while a write is in progress.
         config.setMaximumPoolSize(1);
         config.setConnectionInitSql("PRAGMA journal_mode=WAL");
+
+        // With only one connection available, anything holding it (e.g. a
+        // transaction) blocks every other caller. Fail fast instead of
+        // hanging for Hikari's default 30s so contention is obvious.
+        config.setConnectionTimeout(5000);
     }
 
     @Override
