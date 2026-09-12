@@ -87,6 +87,12 @@ public final class CommandBuilder
 
     private <T> CommandBuilder argument(String name, ArgumentType<T> type, boolean required)
     {
+        if (required && !arguments.isEmpty() && !arguments.get(arguments.size() - 1).isRequired())
+            throw new IllegalStateException(
+                    "Required argument '" + name + "' cannot be added after optional argument '"
+                            + arguments.get(arguments.size() - 1).getName() + "'"
+            );
+
         arguments.add(new CommandArgument<>(name, type, required));
         return this;
     }
