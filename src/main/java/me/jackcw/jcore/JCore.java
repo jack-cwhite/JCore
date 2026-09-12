@@ -2,6 +2,7 @@ package me.jackcw.jcore;
 
 import me.jackcw.jcore.command.CommandManager;
 import me.jackcw.jcore.database.*;
+import me.jackcw.jcore.menu.MenuManager;
 import me.jackcw.jcore.message.MessageManager;
 import me.jackcw.jcore.serialization.InventorySerializer;
 import me.jackcw.jcore.serialization.ItemStackSerializer;
@@ -26,6 +27,7 @@ public final class JCore
     private final MigrationManager migrationManager;
     private final DatabaseConfiguration databaseConfiguration;
     private final SerializerManager serializerManager;
+    private final MenuManager menuManager;
     private MessageManager messageManager;
     private CommandManager commandManager;
 
@@ -40,6 +42,7 @@ public final class JCore
         this.databaseConfiguration = databaseConfiguration;
         this.serializerManager = new SerializerManager();
         this.fileManager = new FileManager(plugin, serializers());
+        this.menuManager = new MenuManager(plugin);
 
         serializerManager.register(ItemStack.class, new ItemStackSerializer());
         serializerManager.register(Location.class, new LocationSerializer());
@@ -121,6 +124,11 @@ public final class JCore
     public SerializerManager serializers()
     {
         return serializerManager;
+    }
+
+    public MenuManager menus()
+    {
+        return menuManager;
     }
 
     public MessageManager messages()
