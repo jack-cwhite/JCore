@@ -239,7 +239,7 @@ public class CommandManager implements CommandExecutor
                 : "";
 
         List<String> completions = new ArrayList<>();
-        
+
         if (!consumingArguments)
             for (CommandNode child : node.getChildren())
                 if (child.getName().toLowerCase().startsWith(current.toLowerCase()))
