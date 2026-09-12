@@ -52,7 +52,7 @@ public final class SerializerManager
     @SuppressWarnings("unchecked")
     public Serializer<Object> getSerializer(Class<?> type)
     {
-        Serializer<?> serializer = serializers.get(type);
+        Serializer<?> serializer = findSerializer(type);
 
         if (serializer == null)
             throw new IllegalStateException(
@@ -60,6 +60,27 @@ public final class SerializerManager
             );
 
         return (Serializer<Object>) serializer;
+    }
+
+    private Serializer<?> findSerializer(Class<?> type)
+    {
+        if (type == null)
+            return null;
+
+        Serializer<?> serializer = serializers.get(type);
+
+        if (serializer != null)
+            return serializer;
+
+        for (Class<?> implementedInterface : type.getInterfaces())
+        {
+            serializer = findSerializer(implementedInterface);
+
+            if (serializer != null)
+                return serializer;
+        }
+
+        return findSerializer(type.getSuperclass());
     }
 
     @SuppressWarnings("unchecked")
