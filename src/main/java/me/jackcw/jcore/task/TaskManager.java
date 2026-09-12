@@ -65,6 +65,15 @@ public final class TaskManager
         );
     }
 
+    public BukkitTask runSyncLater(Runnable task, long delayTicks)
+    {
+        return plugin.getServer().getScheduler().runTaskLater(
+                plugin,
+                task,
+                delayTicks
+        );
+    }
+
     public ExecutorService executorService()
     {
         return asyncExecutor;

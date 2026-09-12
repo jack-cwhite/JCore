@@ -105,6 +105,23 @@ class TaskManagerTest
     }
 
     @Test
+    void runSyncLaterFiresOnceAfterDelay()
+    {
+        AtomicInteger runs = new AtomicInteger();
+
+        taskManager.runSyncLater(runs::incrementAndGet, 2L);
+
+        MockBukkit.getMock().getScheduler().performTicks(1);
+        assertEquals(0, runs.get());
+
+        MockBukkit.getMock().getScheduler().performTicks(2);
+        assertEquals(1, runs.get());
+
+        MockBukkit.getMock().getScheduler().performTicks(3);
+        assertEquals(1, runs.get());
+    }
+
+    @Test
     void executorServiceIsExposed()
     {
         assertNotNull(taskManager.executorService());
