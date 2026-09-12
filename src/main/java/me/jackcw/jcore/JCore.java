@@ -26,8 +26,8 @@ public final class JCore
     private final MigrationManager migrationManager;
     private final DatabaseConfiguration databaseConfiguration;
     private final SerializerManager serializerManager;
-    private final MessageManager messageManager;
-    private final CommandManager commandManager;
+    private MessageManager messageManager;
+    private CommandManager commandManager;
 
     private boolean initialized;
 
@@ -44,12 +44,6 @@ public final class JCore
         serializerManager.register(ItemStack.class, new ItemStackSerializer());
         serializerManager.register(Location.class, new LocationSerializer());
         serializerManager.register(Inventory.class, new InventorySerializer());
-
-        YamlFile messagesFile = fileManager.yaml(MESSAGES_FILE, true);
-        messagesFile.updateDefaults();
-
-        this.messageManager = new MessageManager(plugin, messagesFile);
-        this.commandManager = new CommandManager(plugin, messageManager);
     }
 
     public static JCore create(JavaPlugin plugin)
@@ -131,12 +125,44 @@ public final class JCore
 
     public MessageManager messages()
     {
+        ensureMessages();
         return messageManager;
     }
 
     public CommandManager commands()
     {
+        ensureMessages();
         return commandManager;
+    }
+
+    /**
+     * Points JCore's built-in {@link CommandManager} at a plugin-owned
+     * {@link MessageManager} (e.g. one backed by the plugin's own
+     * messages.yml) instead of the default jcore-messages.yml. Call this
+     * before {@link #messages()} or {@link #commands()} is first accessed,
+     * otherwise the default wiring will already have been created.
+     */
+    public void useMessages(MessageManager messageManager)
+    {
+        if (messageManager == null)
+            throw new IllegalArgumentException(
+                    "Message manager cannot be null"
+            );
+
+        this.messageManager = messageManager;
+        this.commandManager = new CommandManager(plugin, messageManager);
+    }
+
+    private void ensureMessages()
+    {
+        if (messageManager != null)
+            return;
+
+        YamlFile messagesFile = fileManager.yaml(MESSAGES_FILE, true);
+        messagesFile.updateDefaults();
+
+        messageManager = new MessageManager(plugin, messagesFile);
+        commandManager = new CommandManager(plugin, messageManager);
     }
 
     public JavaPlugin plugin()
