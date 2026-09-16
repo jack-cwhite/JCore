@@ -2,6 +2,7 @@ package me.jackcw.jcore.menu;
 
 import me.jackcw.jcore.TestPlugin;
 import me.jackcw.jcore.TestUtils;
+import me.jackcw.jcore.task.TaskManager;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
@@ -29,7 +30,7 @@ class MenuTest
     void setup()
     {
         TestPlugin plugin = TestUtils.mockPlugin();
-        menuManager = new MenuManager(plugin);
+        menuManager = new MenuManager(plugin, new TaskManager(plugin));
         player = MockBukkit.getMock().addPlayer();
     }
 
@@ -119,7 +120,7 @@ class MenuTest
                 .item(2, new ItemStack(Material.DIAMOND), context ->
                 {
                     clicked.set(true);
-                    slotReceived.set(context.getSlot());
+                    slotReceived.set(context.slot());
                 })
                 .build();
 

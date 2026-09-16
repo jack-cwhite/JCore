@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import me.jackcw.jcore.message.CoreMessage;
 
 import java.util.Arrays;
 import java.util.List;
@@ -82,8 +83,8 @@ public final class ArgumentTypes
                 Player player = Bukkit.getPlayerExact(input);
 
                 if (player == null)
-                    throw new IllegalArgumentException(
-                            "Player '" + input + "' could not be found."
+                    throw new CommandArgumentException(
+                            CoreMessage.PLAYER_NOT_FOUND, "player", input
                     );
 
                 return player;

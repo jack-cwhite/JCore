@@ -8,14 +8,10 @@ public final class Migration
     public Migration(int version, DatabaseMigration migration)
     {
         if (version <= 0)
-            throw new IllegalArgumentException(
-                    "Migration version must be greater than 0"
-            );
+            throw new IllegalArgumentException("Migration version must be greater than 0");
 
         if (migration == null)
-            throw new IllegalArgumentException(
-                    "Migration cannot be null"
-            );
+            throw new IllegalArgumentException("Migration cannot be null");
 
         this.version = version;
         this.migration = migration;

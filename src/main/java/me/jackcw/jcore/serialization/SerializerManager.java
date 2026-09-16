@@ -32,9 +32,7 @@ public final class SerializerManager
     public <T> T deserialize(Object value, Class<T> type)
     {
         if (type == null)
-            throw new IllegalArgumentException(
-                    "Type cannote be null"
-            );
+            throw new IllegalArgumentException("Type cannot be null");
 
         if (value == null)
             return null;
@@ -42,11 +40,29 @@ public final class SerializerManager
         Serializer<T> serializer = get(type);
 
         if (serializer == null)
-            throw new IllegalStateException(
-                    "No serializer registered for " + type.getName()
-            );
+            throw new IllegalStateException("No serializer registered for " + type.getName());
 
         return serializer.deserialize(value);
+    }
+
+    public <T> T deserialize(Object value, Class<T> type, int id)
+    {
+        if (type == null)
+            throw new IllegalArgumentException("Type cannot be null");
+
+        if (value == null)
+            return null;
+
+        Serializer<T> serializer = get(type);
+
+        if (serializer == null)
+            throw new IllegalStateException("No serializer registered for " + type.getName()
+            );
+
+        if (!(serializer instanceof RepositorySerializer<T> repositorySerializer))
+            throw new IllegalStateException("Serializer for " + type.getName() + " does not support repository deserialization");
+
+        return repositorySerializer.deserialize(id, value);
     }
 
     @SuppressWarnings("unchecked")
@@ -55,9 +71,7 @@ public final class SerializerManager
         Serializer<?> serializer = findSerializer(type);
 
         if (serializer == null)
-            throw new IllegalStateException(
-                    "No serializer registered for " + type.getName()
-            );
+            throw new IllegalStateException("No serializer registered for " + type.getName());
 
         return (Serializer<Object>) serializer;
     }

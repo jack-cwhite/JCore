@@ -86,4 +86,22 @@ class MessageManagerTest
                 messageManager.getPrefix()
         );
     }
+
+    @Test
+    void formatIncludesPrefixPlaceholdersAndRawColorCodes()
+    {
+        YamlFile file = TestUtils.createYaml(plugin);
+
+        file.set("core.prefix", "&7[Prefix]");
+        file.set("core.no-permission", "&cHello {name}");
+        file.save();
+        file.reload();
+
+        MessageManager messageManager = new MessageManager(plugin, file);
+
+        assertEquals(
+                "&7[Prefix] &cHello World",
+                messageManager.format(CoreMessage.NO_PERMISSION, "name", "World")
+        );
+    }
 }

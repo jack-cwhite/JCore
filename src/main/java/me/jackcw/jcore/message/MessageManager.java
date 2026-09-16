@@ -92,17 +92,33 @@ public final class MessageManager
 
     public void send(CommandSender receiver, MessageKey key, Object... replacers)
     {
+        String message = format(key, replacers);
+
+        if (message != null)
+            receiver.sendMessage(StringUtil.color(message));
+    }
+
+    /**
+     * Resolves a message with the prefix prepended and placeholders
+     * substituted, same as {@link #send}, but returns it instead of sending
+     * it - for callers that need the formatted text themselves (e.g. to
+     * build an Adventure {@code Component} for a menu prompt) rather than
+     * dispatching it to a {@link CommandSender} directly. Color codes are
+     * left as raw {@code &} codes, not translated.
+     */
+    public String format(MessageKey key, Object... replacers)
+    {
         String message = get(key);
 
         if (message == null)
-            return;
+            return null;
 
         String prefix = getPrefix();
 
         if (prefix != null && !prefix.isBlank())
             message = prefix + " " + message;
 
-        receiver.sendMessage(StringUtil.replace(message, replacers));
+        return StringUtil.substitute(message, replacers);
     }
 
     public void sendList(CommandSender receiver, MessageKey key, Object... replacers)

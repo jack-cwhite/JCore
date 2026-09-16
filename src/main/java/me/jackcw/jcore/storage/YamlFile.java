@@ -1,10 +1,12 @@
 package me.jackcw.jcore.storage;
 
+import me.jackcw.jcore.item.ItemStackParser;
 import me.jackcw.jcore.serialization.Serializer;
 import me.jackcw.jcore.serialization.SerializerManager;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.ByteArrayInputStream;
@@ -141,9 +143,11 @@ public final class YamlFile
         }
         catch (IllegalArgumentException e)
         {
-            throw new RuntimeException(
-                    "Could not copy resource " + name, e
-            );
+            // The plugin doesn't bundle this resource (e.g. it hasn't shipped
+            // its own messages.yml yet) - fall back to an empty file instead
+            // of crashing. Anyone relying on mergeDefaults()/updateDefaults()
+            // still gets their defaults populated from there.
+            createFile();
         }
     }
 
@@ -157,7 +161,12 @@ public final class YamlFile
             if (resource == null)
                 return false;
 
-            return new YamlDefaultsMerger().merge(file, resource);
+            boolean changed = new YamlDefaultsMerger().merge(file, resource);
+
+            if (changed)
+                reload();
+
+            return changed;
         }
         catch (IOException e)
         {
@@ -228,6 +237,16 @@ public final class YamlFile
         return getConfig().getStringList(path);
     }
 
+    public ItemStack getItemStack(String path)
+    {
+        ConfigurationSection section = getConfig().getConfigurationSection(path);
+
+        if (section == null)
+            return null;
+
+        return ItemStackParser.parse(section);
+    }
+
     public void set(String path, Object value)
     {
         getConfig().set(path, value);
@@ -254,6 +273,22 @@ public final class YamlFile
         throw new IllegalStateException(
                 "Value at '" + path + "'is not of type " + type.getName()
         );
+    }
+
+    public <T> T get(String path, Class<T> type, int id)
+    {
+        Object value = getConfig().get(path);
+
+        if (value == null)
+            return null;
+
+        if (value instanceof ConfigurationSection section)
+            value = sectionToMap(section);
+
+        if (type.isInstance(value))
+            return type.cast(value);
+
+        return serializerManager.deserialize(value, type, id);
     }
 
     private Map<String, Object> sectionToMap(ConfigurationSection section)

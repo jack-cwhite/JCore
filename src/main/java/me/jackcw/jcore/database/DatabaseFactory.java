@@ -12,19 +12,13 @@ public final class DatabaseFactory
     public static Database create(JavaPlugin plugin, TaskManager taskManager, DatabaseConfiguration configuration)
     {
         if (plugin == null)
-            throw new IllegalArgumentException(
-                    "Plugin cannot be null"
-            );
+            throw new IllegalArgumentException("Plugin cannot be null");
 
         if (taskManager == null)
-            throw new IllegalArgumentException(
-                    "Task manager cannot be null"
-            );
+            throw new IllegalArgumentException("Task manager cannot be null");
 
         if (configuration == null)
-            throw new IllegalArgumentException(
-                    "Database configuration cannot be null"
-            );
+            throw new IllegalArgumentException("Database configuration cannot be null");
 
         return switch(configuration.getType())
         {

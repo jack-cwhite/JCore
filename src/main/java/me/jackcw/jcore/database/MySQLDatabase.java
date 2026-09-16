@@ -14,19 +14,13 @@ public final class MySQLDatabase extends AbstractDatabase
         super(taskManager);
 
         if (plugin == null)
-            throw new IllegalArgumentException(
-                    "Plugin cannot be null"
-            );
+            throw new IllegalArgumentException("Plugin cannot be null");
 
         if (configuration == null)
-            throw new IllegalArgumentException(
-                    "Database configuration cannot be null"
-            );
+            throw new IllegalArgumentException("Database configuration cannot be null");
 
         if (type != DatabaseType.MYSQL && type != DatabaseType.MARIADB)
-            throw new IllegalArgumentException(
-                    "MySQLDatabase requires MYSQL or MARIADB database type"
-            );
+            throw new IllegalArgumentException("MySQLDatabase requires MYSQL or MARIADB database type");
 
         this.configuration = configuration;
         this.type = type;
@@ -52,7 +46,7 @@ public final class MySQLDatabase extends AbstractDatabase
         config.setDriverClassName(driver);
 
         config.setJdbcUrl(
-                "jdbc:" +
+                        "jdbc:" +
                         protocol +
                         "://" +
                         configuration.getHost() +

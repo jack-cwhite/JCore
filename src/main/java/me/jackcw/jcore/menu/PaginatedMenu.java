@@ -4,38 +4,46 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
+import java.util.function.Function;
 
-public final class PaginatedMenu
+public final class PaginatedMenu<T>
 {
+    private final MenuManager menuManager;
     private final Menu menu;
     private final int rows;
-    private final List<Entry> entries;
+    private final List<T> entries;
+    private final Function<T, ItemStack> itemFactory;
+    private final EntryClickHandler<T> clickHandler;
     private final ItemStack fillItem;
-    private final ItemStack previousButtonItem;
-    private final ItemStack nextButtonItem;
-
+    private final boolean showBack;
     private final int contentSlotsPerPage;
     private final int totalPages;
-
     private int currentPage;
+    private Player viewer;
 
-    PaginatedMenu(Menu menu, int rows, List<Entry> entries, ItemStack fillItem, ItemStack previousButtonItem, ItemStack nextButtonItem)
+    PaginatedMenu(MenuManager menuManager, Menu menu, int rows, List<T> entries, Function<T, ItemStack> itemFactory, EntryClickHandler<T> clickHandler, ItemStack fillItem, boolean showBack, int startPage)
     {
+        this.menuManager = menuManager;
         this.menu = menu;
         this.rows = rows;
         this.entries = entries;
+        this.itemFactory = itemFactory;
+        this.clickHandler = clickHandler;
         this.fillItem = fillItem;
-        this.previousButtonItem = previousButtonItem;
-        this.nextButtonItem = nextButtonItem;
+        this.showBack = showBack;
 
         this.contentSlotsPerPage = (rows - 1) * 9;
         this.totalPages = Math.max(1, (int) Math.ceil(entries.size() / (double) contentSlotsPerPage));
+        this.currentPage = Math.max(0, Math.min(startPage, totalPages - 1));
 
+        menu.attachPagination(this);
         render();
     }
 
     public void open(Player player)
     {
+        viewer = player;
+        renderNavigation();
         menu.open(player);
     }
 
@@ -49,22 +57,34 @@ public final class PaginatedMenu
         return totalPages;
     }
 
-    public void nextPage()
+    public PaginatedMenu<T> nextPage()
     {
         if (currentPage + 1 >= totalPages)
-            return;
+            return this;
 
         currentPage++;
         render();
+
+        return this;
     }
 
-    public void previousPage()
+    public PaginatedMenu<T> previousPage()
     {
         if (currentPage == 0)
-            return;
+            return this;
 
         currentPage--;
         render();
+
+        return this;
+    }
+
+    public PaginatedMenu<T> goToPage(int page)
+    {
+        currentPage = Math.max(0, Math.min(page, totalPages - 1));
+        render();
+
+        return this;
     }
 
     public Menu getMenu()
@@ -83,24 +103,42 @@ public final class PaginatedMenu
             for (int slot = 0; slot < size; slot++)
                 menu.setItem(slot, fillItem);
 
+        renderEntries();
+        renderNavigation();
+    }
+
+    private void renderEntries()
+    {
         int start = currentPage * contentSlotsPerPage;
         int end = Math.min(start + contentSlotsPerPage, entries.size());
 
+        int slot = 0;
+
         for (int i = start; i < end; i++)
         {
-            Entry entry = entries.get(i);
-            int slot = i - start;
+            T entry = entries.get(i);
+            ItemStack item = itemFactory.apply(entry);
 
-            menu.setItem(slot, entry.item(), entry.handler());
+            menu.setItem(slot, item, context -> clickHandler.onClick(context, entry));
+
+            slot++;
         }
-
-        int navRow = size - 9;
-
-        menu.setItem(navRow, previousButtonItem, context -> previousPage());
-        menu.setItem(navRow + 8, nextButtonItem, context -> nextPage());
     }
 
-    record Entry(ItemStack item, MenuClickHandler handler)
+    private void renderNavigation()
     {
+        MenuNavigationStyle style = menuManager.navigationStyle();
+
+        if (currentPage > 0)
+            menu.setItem(MenuNavigationSlots.previousPage(rows), style.previous(), context -> previousPage());
+
+        if (currentPage < totalPages - 1)
+            menu.setItem(MenuNavigationSlots.nextPage(rows), style.next(), context -> nextPage());
+
+        if (totalPages > 1)
+            menu.setItem(MenuNavigationSlots.pageIndicator(rows), style.pageIndicator(currentPage + 1, totalPages));
+
+        if (showBack && viewer != null && menuManager.navigator().hasHistory(viewer))
+            menu.setItem(MenuNavigationSlots.backButton(rows), style.back(), MenuContext::back);
     }
 }

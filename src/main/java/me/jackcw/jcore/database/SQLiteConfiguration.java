@@ -7,9 +7,7 @@ public final class SQLiteConfiguration
     public SQLiteConfiguration(String fileName)
     {
         if (fileName == null || fileName.isBlank())
-            throw new IllegalArgumentException(
-                    "Database file name cannot be null or blank"
-            );
+            throw new IllegalArgumentException("Database file name cannot be null or blank");
 
         this.fileName = fileName;
     }

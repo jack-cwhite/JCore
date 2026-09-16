@@ -16,11 +16,20 @@ public class CommandManager implements CommandExecutor
     private final JavaPlugin plugin;
     private final MessageManager messageManager;
     private final Map<String, CommandNode> commands = new HashMap<>();
+    private PermissionPolicy permissionPolicy = PermissionPolicy.PARENT_AND_LEAF;
 
     public CommandManager(JavaPlugin plugin, MessageManager messageManager)
     {
         this.plugin = plugin;
         this.messageManager = messageManager;
+    }
+
+    public void setPermissionPolicy(PermissionPolicy permissionPolicy)
+    {
+        if (permissionPolicy == null)
+            throw new IllegalArgumentException("Permission policy cannot be null");
+
+        this.permissionPolicy = permissionPolicy;
     }
 
     public void register(CommandNode command)
@@ -34,9 +43,7 @@ public class CommandManager implements CommandExecutor
 
         if (bukkitCommand == null)
         {
-            throw new IllegalStateException(
-                    "Command '" + command.getName() + "' is not defined in plugin.yml"
-            );
+            throw new IllegalStateException("Command '" + command.getName() + "' is not defined in plugin.yml");
         }
 
         bukkitCommand.setExecutor(this);
@@ -48,9 +55,7 @@ public class CommandManager implements CommandExecutor
         String key = name.toLowerCase();
 
         if (commands.containsKey(key))
-            throw new IllegalStateException(
-                    "Command name or alias '" + name + "' is already registered"
-            );
+            throw new IllegalStateException("Command name or alias '" + name + "' is already registered");
 
         commands.put(key, command);
     }
@@ -68,42 +73,32 @@ public class CommandManager implements CommandExecutor
 
     private boolean executeNode(CommandNode node, CommandSender sender, String[] args)
     {
-        if (!checkPermission(node, sender))
+        CommandNode child = args.length > 0 ? findChild(node, args[0]) : null;
+
+        boolean requiresPermissionHere = permissionPolicy == PermissionPolicy.PARENT_AND_LEAF || child == null;
+
+        if (requiresPermissionHere && !checkPermission(node, sender))
             return true;
 
         if (node.isPlayerOnly() && !(sender instanceof Player))
         {
-            messageManager.send(
-                    sender,
-                    CoreMessage.PLAYER_ONLY
-            );
-
+            messageManager.send(sender, CoreMessage.PLAYER_ONLY);
             return true;
         }
 
-        if (args.length > 0)
+        if (child != null)
         {
-            CommandNode child = findChild(node, args[0]);
+            String[] remaining = new String[args.length-1];
+            System.arraycopy(args, 1, remaining, 0, remaining.length);
 
-            if (child != null)
-            {
-                String[] remaining = new String[args.length-1];
-                System.arraycopy(args, 1, remaining, 0, remaining.length);
-
-                return executeNode(child, sender, remaining);
-            }
+            return executeNode(child, sender, remaining);
         }
 
         if (node.getExecutor() != null)
             return execute(node, sender, args);
 
         if (node.getUsage() != null)
-            messageManager.send(
-                    sender,
-                    CoreMessage.INCORRECT_USAGE,
-                    "usage",
-                    node.getUsage()
-            );
+            messageManager.send(sender, CoreMessage.INCORRECT_USAGE, "usage", node.getUsage());
 
         return true;
     }
@@ -120,12 +115,7 @@ public class CommandManager implements CommandExecutor
                 if (argument.isRequired())
                 {
                     if (node.getUsage() != null)
-                        messageManager.send(
-                                sender,
-                                CoreMessage.INCORRECT_USAGE,
-                                "usage",
-                                node.getUsage()
-                        );
+                        messageManager.send(sender, CoreMessage.INCORRECT_USAGE, "usage", node.getUsage());
 
                     return true;
                 }
@@ -140,9 +130,14 @@ public class CommandManager implements CommandExecutor
                 Object value = argument.getType().parse(rawValue);
                 parsedArguments.put(argument.getName(), value);
             }
+            catch (CommandArgumentException e)
+            {
+                messageManager.send(sender, e.getMessageKey(), e.getPlaceholders());
+                return true;
+            }
             catch (IllegalArgumentException e)
             {
-                sender.sendMessage(e.getMessage());
+                sender.sendMessage(org.bukkit.ChatColor.RED + e.getMessage());
                 return true;
             }
 
@@ -152,12 +147,7 @@ public class CommandManager implements CommandExecutor
         if (argumentIndex < args.length)
         {
             if (node.getUsage() != null)
-                messageManager.send(
-                        sender,
-                        CoreMessage.INCORRECT_USAGE,
-                        "usage",
-                        node.getUsage()
-                );
+                messageManager.send(sender, CoreMessage.INCORRECT_USAGE, "usage", node.getUsage());
 
             return true;
         }
@@ -171,22 +161,28 @@ public class CommandManager implements CommandExecutor
 
     private boolean checkPermission(CommandNode node, CommandSender sender)
     {
-        String permission = node.getPermission();
-
-        if (permission == null || permission.isBlank())
+        if (hasPermission(node, sender))
             return true;
 
-        if (sender.hasPermission(permission))
-            return true;
-
-        messageManager.send(
-                sender,
-                CoreMessage.NO_PERMISSION,
-                "permission",
-                permission
+        messageManager.send(sender, CoreMessage.NO_PERMISSION, "permission", node.getPermission()
         );
 
         return false;
+    }
+
+    private boolean hasPermission(CommandNode node, CommandSender sender)
+    {
+        String permission = node.getPermission();
+
+        return permission == null || permission.isBlank() || sender.hasPermission(permission);
+    }
+
+    private boolean isVisibleInCompletion(CommandNode node, CommandSender sender)
+    {
+        if (permissionPolicy == PermissionPolicy.PARENT_AND_LEAF || node.getChildren().isEmpty())
+            return hasPermission(node, sender);
+
+        return true;
     }
 
     private CommandNode findChild(CommandNode node, String name)
@@ -200,7 +196,6 @@ public class CommandManager implements CommandExecutor
                 if (alias.equalsIgnoreCase(name))
                     return child;
         }
-
 
         return null;
     }
@@ -222,7 +217,7 @@ public class CommandManager implements CommandExecutor
             {
                 CommandNode child = findChild(node, args[i]);
 
-                if (child != null)
+                if (child != null && isVisibleInCompletion(child, sender))
                 {
                     node = child;
                     continue;
@@ -234,23 +229,19 @@ public class CommandManager implements CommandExecutor
             argumentIndex++;
         }
 
-        String current = args.length > 0
-                ? args[args.length - 1]
-                : "";
+        String current = args.length > 0 ? args[args.length - 1] : "";
 
         List<String> completions = new ArrayList<>();
 
         if (!consumingArguments)
             for (CommandNode child : node.getChildren())
-                if (child.getName().toLowerCase().startsWith(current.toLowerCase()))
+                if (isVisibleInCompletion(child, sender) && child.getName().toLowerCase().startsWith(current.toLowerCase()))
                     completions.add(child.getName());
 
         List<CommandArgument<?>> arguments = node.getArguments();
 
         if (argumentIndex < arguments.size())
-            completions.addAll(
-                    arguments.get(argumentIndex).getType().suggest(sender, current)
-            );
+            completions.addAll(arguments.get(argumentIndex).getType().suggest(sender, current));
 
         return completions;
     }

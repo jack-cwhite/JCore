@@ -22,9 +22,7 @@ public abstract class AbstractDatabase implements Database
     protected AbstractDatabase(TaskManager taskManager)
     {
         if (taskManager == null)
-            throw new IllegalArgumentException(
-                    "Task manager cannot be null"
-            );
+            throw new IllegalArgumentException("Task manager cannot be null");
 
         this.taskManager = taskManager;
     }
@@ -47,9 +45,7 @@ public abstract class AbstractDatabase implements Database
             }
             catch (SQLException e)
             {
-                throw new DatabaseException(
-                        "Could not execute database statement: " + sql, e
-                );
+                throw new DatabaseException("Could not execute database statement: " + sql, e);
             }
         });
     }
@@ -70,9 +66,7 @@ public abstract class AbstractDatabase implements Database
             }
             catch (SQLException e)
             {
-                throw new DatabaseException(
-                        "Could not execute database query: " + sql, e
-                );
+                throw new DatabaseException("Could not execute database query: " + sql, e);
             }
         });
     }
@@ -82,9 +76,7 @@ public abstract class AbstractDatabase implements Database
     {
         if (!isConnected())
         {
-            throw new DatabaseException(
-                    "Database is not connected"
-            );
+            throw new DatabaseException("Database is not connected");
         }
 
         try (Connection connection = dataSource.getConnection())
@@ -110,9 +102,7 @@ public abstract class AbstractDatabase implements Database
                     e.addSuppressed(rollbackException);
                 }
 
-                throw new DatabaseException(
-                        "Database transaction failed", e
-                );
+                throw new DatabaseException("Database transaction failed", e);
             }
             finally
             {
@@ -121,18 +111,14 @@ public abstract class AbstractDatabase implements Database
         }
         catch (SQLException e)
         {
-            throw new DatabaseException(
-                    "Could not execute database transaction", e
-            );
+            throw new DatabaseException("Could not execute database transaction", e);
         }
     }
 
     @Override
     public CompletableFuture<Integer> executeAsync(String sql, Object... parameters)
     {
-        return taskManager.submitAsync(
-                () -> execute(sql, parameters)
-        );
+        return taskManager.submitAsync(() -> execute(sql, parameters));
     }
 
     @Override
@@ -152,9 +138,7 @@ public abstract class AbstractDatabase implements Database
                     }
                     catch (SQLException e)
                     {
-                        throw new DatabaseException(
-                                "Could not execute database query: " + sql, e
-                        );
+                        throw new DatabaseException("Could not execute database query: " + sql, e);
                     }
                 })
         );
@@ -173,9 +157,7 @@ public abstract class AbstractDatabase implements Database
     {
         if (!isConnected())
         {
-            throw new DatabaseException(
-                    "Database not connected"
-            );
+            throw new DatabaseException("Database not connected");
         }
 
         Connection existingConnection = transactionConnection.get();
@@ -191,9 +173,7 @@ public abstract class AbstractDatabase implements Database
         }
         catch (SQLException e)
         {
-            throw new DatabaseException(
-                    "Could not execute database operation", e
-            );
+            throw new DatabaseException("Could not execute database operation", e);
         }
     }
 
@@ -214,13 +194,14 @@ public abstract class AbstractDatabase implements Database
             return;
 
         if (state == DatabaseState.CLOSED)
-            throw new DatabaseException(
-                    "Database has been closed"
-            );
+            throw new DatabaseException("Database has been closed");
 
         beforeConnect();
 
         HikariConfig config = new HikariConfig();
+        config.setMaximumPoolSize(5);
+        config.setMinimumIdle(1);
+        config.setConnectionTimeout(5000);
         configure(config);
 
         try
@@ -229,9 +210,7 @@ public abstract class AbstractDatabase implements Database
         }
         catch (RuntimeException e)
         {
-            throw new DatabaseException(
-                    "Could not connect to database", e
-            );
+            throw new DatabaseException("Could not connect to database", e);
         }
 
         state = DatabaseState.CONNECTED;
@@ -268,18 +247,11 @@ public abstract class AbstractDatabase implements Database
         try
         {
             for (int i = 0; i < parameters.length; i++)
-            {
-                statement.setObject(
-                        i + 1,
-                        parameters[i]
-                );
-            }
+                statement.setObject(i + 1, parameters[i]);
         }
         catch (SQLException e)
         {
-            throw new DatabaseException(
-                    "Could not bind database parameters", e
-            );
+            throw new DatabaseException("Could not bind database parameters", e);
         }
     }
 }

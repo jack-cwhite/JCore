@@ -39,14 +39,10 @@ public final class DatabaseResult
         Object value = getValue(column);
 
         if (value == null)
-            throw new DatabaseException(
-                    "Column '" + column + "' contains NULL"
-            );
+            throw new DatabaseException("Column '" + column + "' contains NULL");
 
         if (!(value instanceof Number number))
-            throw new DatabaseException(
-                    "Column '" + column + "' does not contain a numeric value"
-            );
+            throw new DatabaseException("Column '" + column + "' does not contain a numeric value");
 
         return number.intValue();
     }
@@ -56,14 +52,10 @@ public final class DatabaseResult
         Object value = getValue(column);
 
         if (value == null)
-            throw new DatabaseException(
-                    "Column '" + column + "' contains NULL"
-            );
+            throw new DatabaseException("Column '" + column + "' contains NULL");
 
         if (!(value instanceof Number number))
-            throw new DatabaseException(
-                    "Column '" + column + "' does not contain a numeric value"
-            );
+            throw new DatabaseException("Column '" + column + "' does not contain a numeric value");
 
         return number.longValue();
     }
@@ -73,14 +65,10 @@ public final class DatabaseResult
         Object value = getValue(column);
 
         if (value == null)
-            throw new DatabaseException(
-                    "Column '" + column + "' contains NULL"
-            );
+            throw new DatabaseException("Column '" + column + "' contains NULL");
 
         if (!(value instanceof Number number))
-            throw new DatabaseException(
-                    "Column '" + column + "' does not contain a numeric value"
-            );
+            throw new DatabaseException("Column '" + column + "' does not contain a numeric value");
 
         return number.shortValue();
     }
@@ -90,14 +78,10 @@ public final class DatabaseResult
         Object value = getValue(column);
 
         if (value == null)
-            throw new DatabaseException(
-                    "Column '" + column + "' contains NULL"
-            );
+            throw new DatabaseException("Column '" + column + "' contains NULL");
 
         if (!(value instanceof Number number))
-            throw new DatabaseException(
-                    "Column '" + column + "' does not contain a numeric value"
-            );
+            throw new DatabaseException("Column '" + column + "' does not contain a numeric value");
 
         return number.byteValue();
     }
@@ -107,14 +91,10 @@ public final class DatabaseResult
         Object value = getValue(column);
 
         if (value == null)
-            throw new DatabaseException(
-                    "Column '" + column + "' contains NULL"
-            );
+            throw new DatabaseException("Column '" + column + "' contains NULL");
 
         if (!(value instanceof Number number))
-            throw new DatabaseException(
-                    "Column '" + column + "' does not contain a numeric value"
-            );
+            throw new DatabaseException("Column '" + column + "' does not contain a numeric value");
 
         return number.floatValue();
     }
@@ -124,14 +104,10 @@ public final class DatabaseResult
         Object value = getValue(column);
 
         if (value == null)
-            throw new DatabaseException(
-                    "Column '" + column + "' contains NULL"
-            );
+            throw new DatabaseException("Column '" + column + "' contains NULL");
 
         if (!(value instanceof Number number))
-            throw new DatabaseException(
-                    "Column '" + column + "' does not contain a numeric value"
-            );
+            throw new DatabaseException("Column '" + column + "' does not contain a numeric value");
 
         return number.doubleValue();
     }
@@ -149,9 +125,7 @@ public final class DatabaseResult
         if (value instanceof String string)
             return Boolean.parseBoolean(string);
 
-        throw new DatabaseException(
-                "Could not convert column '" + column + "' to boolean"
-        );
+        throw new DatabaseException("Could not convert column '" + column + "' to boolean");
     }
 
     public UUID getUUID(String column)
@@ -170,9 +144,7 @@ public final class DatabaseResult
         }
         catch (IllegalArgumentException e)
         {
-            throw new DatabaseException(
-                    "Invalid UUID in column: " + column, e
-            );
+            throw new DatabaseException("Invalid UUID in column: " + column, e);
         }
     }
 
@@ -189,9 +161,7 @@ public final class DatabaseResult
         }
         catch (IllegalArgumentException e)
         {
-            throw new DatabaseException(
-                    "Invalid enum value '" + value + "' in column: " + column, e
-            );
+            throw new DatabaseException("Invalid enum value '" + value + "' in column: " + column, e);
         }
     }
 
@@ -213,21 +183,15 @@ public final class DatabaseResult
     private Object getValue(String column)
     {
         if (currentRow < 0)
-            throw new DatabaseException(
-                    "No current database row. Call next() before retrieving values"
-            );
+            throw new DatabaseException("No current database row. Call next() before retrieving values");
 
         if (currentRow >= rows.size())
-            throw new DatabaseException(
-                    "No current database row"
-            );
+            throw new DatabaseException("No current database row");
 
         Map<String, Object> row = rows.get(currentRow);
 
         if (!row.containsKey(column))
-            throw new DatabaseException(
-                    "Column does not exist: " + column
-            );
+            throw new DatabaseException("Column does not exist: " + column);
 
         return row.get(column);
     }
@@ -260,9 +224,7 @@ public final class DatabaseResult
         }
         catch (SQLException e)
         {
-            throw new DatabaseException(
-                    "Could not read database result", e
-            );
+            throw new DatabaseException("Could not read database result", e);
         }
     }
 }

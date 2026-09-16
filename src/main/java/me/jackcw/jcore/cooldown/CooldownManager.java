@@ -22,8 +22,7 @@ public final class CooldownManager
 
         long expiresAt = System.currentTimeMillis() + unit.toMillis(duration);
 
-        cooldowns.computeIfAbsent(id, ignored -> new ConcurrentHashMap<>())
-                .put(key, expiresAt);
+        cooldowns.computeIfAbsent(id, ignored -> new ConcurrentHashMap<>()).put(key, expiresAt);
     }
 
     public boolean isOnCooldown(UUID id, String key)

@@ -1,92 +1,124 @@
 package me.jackcw.jcore.menu;
 
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.Material;
+import me.jackcw.jcore.item.ItemStackParser;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
-public final class PaginatedMenuBuilder
+public final class PaginatedMenuBuilder<T>
 {
     private final MenuManager menuManager;
     private final String title;
     private final int rows;
+    private final List<T> entries;
 
-    private final List<PaginatedMenu.Entry> entries = new ArrayList<>();
-
+    private ConfigurationSection entryTemplate;
+    private Function<T, ItemStack> itemFactory = entry -> null;
+    private EntryClickHandler<T> clickHandler = (context, entry) -> {};
     private ItemStack fillItem;
-    private ItemStack previousButtonItem = namedItem(Material.ARROW, "&ePrevious Page");
-    private ItemStack nextButtonItem = namedItem(Material.ARROW, "&eNext Page");
     private Consumer<Player> onClose;
+    private boolean showBack;
+    private int page;
+    private Map<String, Object> titlePlaceholders;
 
-    PaginatedMenuBuilder(MenuManager menuManager, String title, int rows)
+    PaginatedMenuBuilder(MenuManager menuManager, String title, int rows, List<T> entries)
     {
         if (title == null)
-            throw new IllegalArgumentException(
-                    "Title cannot be null"
-            );
+            throw new IllegalArgumentException("Title cannot be null");
 
         if (rows < 2 || rows > 6)
-            throw new IllegalArgumentException(
-                    "Paginated menus need at least 2 rows (content plus navigation)"
-            );
+            throw new IllegalArgumentException("Paginated menus need at least 2 rows (content plus navigation)");
 
         this.menuManager = menuManager;
         this.title = title;
         this.rows = rows;
+        this.entries = entries;
     }
 
-    public PaginatedMenuBuilder addItem(ItemStack item, MenuClickHandler handler)
+    PaginatedMenuBuilder<T> entryTemplate(ConfigurationSection entryTemplate)
     {
-        entries.add(new PaginatedMenu.Entry(item, handler));
+        this.entryTemplate = entryTemplate;
         return this;
     }
 
-    public PaginatedMenuBuilder fill(ItemStack item)
+    public PaginatedMenuBuilder<T> item(Function<T, Map<String, Object>> placeholders)
+    {
+        if (entryTemplate == null)
+            throw new IllegalStateException("No entry template configured; use item(ConfigurationSection, Function) instead");
+
+        this.itemFactory = entry -> ItemStackParser.parseSafely(entryTemplate, placeholders.apply(entry));
+
+        return this;
+    }
+
+    public PaginatedMenuBuilder<T> item(ConfigurationSection template, Function<T, Map<String, Object>> placeholders)
+    {
+        this.itemFactory = entry -> ItemStackParser.parseSafely(template, placeholders.apply(entry));
+        return this;
+    }
+
+    public PaginatedMenuBuilder<T> itemFactory(Function<T, ItemStack> itemFactory)
+    {
+        this.itemFactory = itemFactory;
+        return this;
+    }
+
+    public ConfigurationSection entryTemplate()
+    {
+        return entryTemplate;
+    }
+
+    public PaginatedMenuBuilder<T> onClick(EntryClickHandler<T> handler)
+    {
+        this.clickHandler = handler;
+        return this;
+    }
+
+    public PaginatedMenuBuilder<T> fill(ItemStack item)
     {
         this.fillItem = item;
         return this;
     }
 
-    public PaginatedMenuBuilder previousButton(ItemStack item)
+    public PaginatedMenuBuilder<T> back()
     {
-        this.previousButtonItem = item;
+        this.showBack = true;
         return this;
     }
 
-    public PaginatedMenuBuilder nextButton(ItemStack item)
-    {
-        this.nextButtonItem = item;
-        return this;
-    }
-
-    public PaginatedMenuBuilder onClose(Consumer<Player> onClose)
+    public PaginatedMenuBuilder<T> onClose(Consumer<Player> onClose)
     {
         this.onClose = onClose;
         return this;
     }
 
-    public PaginatedMenu build()
+    public PaginatedMenuBuilder<T> page(int page)
     {
-        Menu menu = menuManager.builder(title, rows)
-                .onClose(onClose)
-                .build();
-
-        return new PaginatedMenu(menu, rows, entries, fillItem, previousButtonItem, nextButtonItem);
+        this.page = page;
+        return this;
+    }
+    public PaginatedMenuBuilder<T> placeholders(Map<String, Object> placeholders)
+    {
+        this.titlePlaceholders = placeholders;
+        return this;
     }
 
-    private static ItemStack namedItem(Material material, String name)
+    public PaginatedMenu<T> build()
     {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
+        String resolvedTitle = ItemStackParser.substitute(title, titlePlaceholders);
 
-        meta.displayName(LegacyComponentSerializer.legacyAmpersand().deserialize(name));
-        item.setItemMeta(meta);
+        Menu menu = menuManager.builder(resolvedTitle, rows).onClose(onClose).build();
 
-        return item;
+        return new PaginatedMenu<>(menuManager, menu, rows, entries, itemFactory, clickHandler, fillItem, showBack, page);
+    }
+
+    public void open(Player player)
+    {
+        build().open(player);
     }
 }

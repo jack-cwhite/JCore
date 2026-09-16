@@ -13,14 +13,10 @@ public final class PostgreSQLDatabase extends AbstractDatabase
         super(taskManager);
 
         if (plugin == null)
-            throw new IllegalArgumentException(
-                    "Plugin cannot be null"
-            );
+            throw new IllegalArgumentException("Plugin cannot be null");
 
         if (configuration == null)
-            throw new IllegalArgumentException(
-                    "Database configuration cannot be null"
-            );
+            throw new IllegalArgumentException("Database configuration cannot be null");
 
         this.configuration = configuration;
     }
@@ -31,7 +27,7 @@ public final class PostgreSQLDatabase extends AbstractDatabase
         config.setDriverClassName("org.postgresql.Driver");
 
         config.setJdbcUrl(
-                "jdbc:postgresql://" +
+                        "jdbc:postgresql://" +
                         configuration.getHost() +
                         ":" +
                         configuration.getPort() +

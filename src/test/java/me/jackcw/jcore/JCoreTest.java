@@ -31,7 +31,7 @@ public class JCoreTest
     }
 
     @Test
-    void initializeConnectsDatabase()
+    void initializeDoesNotEagerlyConnectDatabase()
     {
         TestPlugin plugin = TestUtils.mockPlugin();
         JCore jcore = JCore.create(plugin);
@@ -39,12 +39,24 @@ public class JCoreTest
         jcore.initialize();
 
         assertTrue(jcore.isInitialized());
+        assertFalse(jcore.isDatabaseConnected());
+    }
+
+    @Test
+    void databaseConnectsLazilyOnFirstAccess()
+    {
+        TestPlugin plugin = TestUtils.mockPlugin();
+        JCore jcore = JCore.create(plugin);
+        jcore.initialize();
+
+        assertFalse(jcore.isDatabaseConnected());
         assertTrue(jcore.database().isConnected());
+        assertTrue(jcore.isDatabaseConnected());
 
         jcore.shutdown();
 
         assertFalse(jcore.isInitialized());
-        assertFalse(jcore.database().isConnected());
+        assertFalse(jcore.isDatabaseConnected());
     }
 
     @Test

@@ -26,9 +26,7 @@ public final class MigrationManager
     public MigrationManager(Database database, String migrationTable)
     {
         if (migrationTable == null || !VALID_TABLE_NAME.matcher(migrationTable).matches())
-            throw new IllegalArgumentException(
-                    "Migration table name must only contain letters, digits and underscores"
-            );
+            throw new IllegalArgumentException("Migration table name must only contain letters, digits and underscores");
 
         this.database = database;
         this.migrationTable = migrationTable;
@@ -36,21 +34,14 @@ public final class MigrationManager
 
     public void add(Migration migration)
     {
-        if (migrations.stream()
-                .anyMatch(existing ->
-                        existing.getVersion() == migration.getVersion()))
+        if (migrations.stream().anyMatch(existing -> existing.getVersion() == migration.getVersion()))
         {
-            throw new IllegalArgumentException(
-                    "Migration version already exists: " +
-                            migration.getVersion()
-            );
+            throw new IllegalArgumentException("Migration version already exists: " + migration.getVersion());
         }
 
         migrations.add(migration);
 
-        migrations.sort(
-                Comparator.comparingInt(Migration::getVersion)
-        );
+        migrations.sort(Comparator.comparingInt(Migration::getVersion));
     }
 
     public void migrate()
@@ -79,16 +70,13 @@ public final class MigrationManager
                 statement.executeUpdate(
                         "CREATE TABLE IF NOT EXISTS " + migrationTable + " (" +
                                 "version INTEGER PRIMARY KEY, " +
-                                "applied_at INTEGER NOT NULL" +
+                                "applied_at BIGINT NOT NULL" +
                                 ")"
                 );
             }
             catch (SQLException e)
             {
-                throw new DatabaseException(
-                        "Could not create migration table",
-                        e
-                );
+                throw new DatabaseException("Could not create migration table", e);
             }
         });
     }
@@ -113,10 +101,7 @@ public final class MigrationManager
         }
         catch (SQLException e)
         {
-            throw new DatabaseException(
-                    "Could not determine database version",
-                    e
-            );
+            throw new DatabaseException("Could not determine database version", e);
         }
     }
 
@@ -133,16 +118,8 @@ public final class MigrationManager
                                 " (version, applied_at) VALUES (?, ?)"
                 ))
                 {
-                    statement.setInt(
-                            1,
-                            migration.getVersion()
-                    );
-
-                    statement.setLong(
-                            2,
-                            System.currentTimeMillis()
-                    );
-
+                    statement.setInt(1, migration.getVersion());
+                    statement.setLong(2, System.currentTimeMillis());
                     statement.executeUpdate();
                 }
             }
@@ -151,19 +128,14 @@ public final class MigrationManager
                 if (e instanceof DatabaseException databaseException)
                     throw databaseException;
 
-                throw new DatabaseException(
-                        "Could not apply migration " +
-                                migration.getVersion(), e
-                );
+                throw new DatabaseException("Could not apply migration " + migration.getVersion(), e);
             }
         });
     }
 
     public int getCurrentVersion()
     {
-        return database.withConnection(
-                this::getCurrentVersion
-        );
+        return database.withConnection(this::getCurrentVersion);
     }
 
     public List<Migration> getMigrations()

@@ -2,6 +2,7 @@ package me.jackcw.jcore.menu;
 
 import me.jackcw.jcore.TestPlugin;
 import me.jackcw.jcore.TestUtils;
+import me.jackcw.jcore.task.TaskManager;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
@@ -13,7 +14,13 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.mockbukkit.mockbukkit.MockBukkit;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,7 +33,7 @@ class PaginatedMenuTest
     void setup()
     {
         TestPlugin plugin = TestUtils.mockPlugin();
-        menuManager = new MenuManager(plugin);
+        menuManager = new MenuManager(plugin, new TaskManager(plugin));
         player = MockBukkit.getMock().addPlayer();
     }
 
@@ -41,14 +48,14 @@ class PaginatedMenuTest
     {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> menuManager.paginatedBuilder("Test", 1)
+                () -> menuManager.paginatedBuilder("Test", 1, List.of())
         );
     }
 
     @Test
     void hasSinglePageWithNoEntries()
     {
-        PaginatedMenu menu = menuManager.paginatedBuilder("Test", 2).build();
+        PaginatedMenu<ItemStack> menu = builder(2, List.of()).build();
 
         assertEquals(1, menu.getTotalPages());
         assertEquals(0, menu.getCurrentPage());
@@ -58,12 +65,7 @@ class PaginatedMenuTest
     void totalPagesAccountsForContentSlotsPerPage()
     {
         // 2 rows = 18 slots, last row reserved for nav = 9 content slots per page.
-        PaginatedMenuBuilder builder = menuManager.paginatedBuilder("Test", 2);
-
-        for (int i = 0; i < 10; i++)
-            builder.addItem(entry(i), null);
-
-        PaginatedMenu menu = builder.build();
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).build();
 
         assertEquals(2, menu.getTotalPages());
     }
@@ -71,12 +73,7 @@ class PaginatedMenuTest
     @Test
     void firstPageRendersFirstBatchOfEntries()
     {
-        PaginatedMenuBuilder builder = menuManager.paginatedBuilder("Test", 2);
-
-        for (int i = 0; i < 10; i++)
-            builder.addItem(entry(i), null);
-
-        PaginatedMenu menu = builder.build();
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).build();
 
         assertEquals(0, menu.getMenu().getInventory().getItem(0).getAmount() - 1);
         assertEquals(8, menu.getMenu().getInventory().getItem(8).getAmount() - 1);
@@ -85,12 +82,7 @@ class PaginatedMenuTest
     @Test
     void nextPageRendersRemainingEntries()
     {
-        PaginatedMenuBuilder builder = menuManager.paginatedBuilder("Test", 2);
-
-        for (int i = 0; i < 10; i++)
-            builder.addItem(entry(i), null);
-
-        PaginatedMenu menu = builder.build();
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).build();
 
         menu.nextPage();
 
@@ -102,7 +94,7 @@ class PaginatedMenuTest
     @Test
     void nextPageAtLastPageIsNoOp()
     {
-        PaginatedMenu menu = menuManager.paginatedBuilder("Test", 2).build();
+        PaginatedMenu<ItemStack> menu = builder(2, List.of()).build();
 
         menu.nextPage();
 
@@ -112,7 +104,7 @@ class PaginatedMenuTest
     @Test
     void previousPageAtFirstPageIsNoOp()
     {
-        PaginatedMenu menu = menuManager.paginatedBuilder("Test", 2).build();
+        PaginatedMenu<ItemStack> menu = builder(2, List.of()).build();
 
         menu.previousPage();
 
@@ -122,12 +114,7 @@ class PaginatedMenuTest
     @Test
     void clickingNextButtonAdvancesPage()
     {
-        PaginatedMenuBuilder builder = menuManager.paginatedBuilder("Test", 2);
-
-        for (int i = 0; i < 10; i++)
-            builder.addItem(entry(i), null);
-
-        PaginatedMenu menu = builder.build();
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).build();
 
         menu.open(player);
 
@@ -140,12 +127,7 @@ class PaginatedMenuTest
     @Test
     void clickingPreviousButtonGoesBack()
     {
-        PaginatedMenuBuilder builder = menuManager.paginatedBuilder("Test", 2);
-
-        for (int i = 0; i < 10; i++)
-            builder.addItem(entry(i), null);
-
-        PaginatedMenu menu = builder.build();
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).build();
         menu.nextPage();
 
         menu.open(player);
@@ -157,21 +139,166 @@ class PaginatedMenuTest
     }
 
     @Test
+    void clickingBackButtonInvokesCallback()
+    {
+        AtomicReference<Player> backedOutBy = new AtomicReference<>();
+
+        menuManager.navigator().open(player, () -> backedOutBy.set(player));
+        backedOutBy.set(null);
+
+        PaginatedMenu<ItemStack> menu = builder(2, List.of()).back().build();
+        menuManager.navigator().openChild(player, () -> menu.open(player));
+
+        // Back button defaults to the center slot of the nav row (13).
+        menuManager.onInventoryClick(clickEvent(player, 13));
+
+        assertSame(player, backedOutBy.get());
+    }
+
+    @Test
+    void rootMenuDoesNotRenderUselessBackButton()
+    {
+        PaginatedMenu<ItemStack> menu = builder(2, List.of()).back().build();
+
+        menuManager.navigator().open(player, () -> menu.open(player));
+
+        assertNull(menu.getMenu().getInventory().getItem(13));
+    }
+
+    @Test
+    void backButtonSurvivesPageNavigation()
+    {
+        AtomicReference<Player> backedOutBy = new AtomicReference<>();
+
+        menuManager.navigator().open(player, () -> backedOutBy.set(player));
+        backedOutBy.set(null);
+
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).back().build();
+        menuManager.navigator().openChild(player, () -> menu.open(player));
+
+        menu.nextPage();
+
+        menuManager.onInventoryClick(clickEvent(player, 13));
+
+        assertSame(player, backedOutBy.get());
+    }
+
+    @Test
+    void navigationButtonsHiddenWhenNotApplicable()
+    {
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).build();
+
+        // Page 0 (first page): previous button (slot 9) absent, next button (slot 17) present.
+        assertNull(menu.getMenu().getInventory().getItem(9));
+        assertNotNull(menu.getMenu().getInventory().getItem(17));
+
+        menu.nextPage();
+
+        // Page 1 (last page): previous button present, next button absent.
+        assertNotNull(menu.getMenu().getInventory().getItem(9));
+        assertNull(menu.getMenu().getInventory().getItem(17));
+    }
+
+    @Test
+    void pageIndicatorHiddenWithOnlyOnePage()
+    {
+        PaginatedMenu<ItemStack> menu = builder(2, entries(1)).build();
+
+        assertNull(menu.getMenu().getInventory().getItem(11));
+    }
+
+    @Test
+    void pageIndicatorShowsCurrentAndTotalPages()
+    {
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).build();
+
+        assertNotNull(menu.getMenu().getInventory().getItem(11));
+
+        menu.nextPage();
+
+        assertNotNull(menu.getMenu().getInventory().getItem(11));
+    }
+
+    @Test
+    void configureNavigationReadsButtonsAndFallsBackForMissingBack()
+    {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("previous-button.material", "ARROW");
+        config.set("previous-button.name", "&aBack a page");
+        // no back-button section at all - should still get a working fallback.
+
+        menuManager.configureNavigation(config);
+
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).build();
+
+        menu.nextPage();
+
+        assertNotNull(menu.getMenu().getInventory().getItem(9));
+    }
+
+    @Test
+    void configureNavigationPageIndicatorReflectsCurrentPage()
+    {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("page-indicator.material", "PAPER");
+        config.set("page-indicator.name", "&e{current}/{total}");
+
+        PaginatedMenu<ItemStack> menu = builder(2, entries(10)).build();
+
+        assertNotNull(menu.getMenu().getInventory().getItem(11));
+    }
+
+    @Test
+    void goToPageJumpsDirectlyAndClamps()
+    {
+        PaginatedMenu<ItemStack> menu = builder(2, entries(20)).build();
+
+        menu.goToPage(2);
+        assertEquals(2, menu.getCurrentPage());
+
+        menu.goToPage(99);
+        assertEquals(menu.getTotalPages() - 1, menu.getCurrentPage());
+
+        menu.goToPage(-5);
+        assertEquals(0, menu.getCurrentPage());
+    }
+
+    @Test
     void fillAppliesToBackgroundSlots()
     {
         ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
 
-        PaginatedMenu menu = menuManager.paginatedBuilder("Test", 2)
-                .addItem(entry(0), null)
+        PaginatedMenu<ItemStack> menu = builder(2, entries(1))
                 .fill(filler)
                 .build();
 
         assertEquals(filler, menu.getMenu().getInventory().getItem(1));
     }
 
-    private ItemStack entry(int index)
+    @Test
+    void startsOnRequestedPage()
     {
-        return new ItemStack(Material.DIAMOND, index + 1);
+        PaginatedMenu<ItemStack> menu = builder(2, entries(20))
+                .page(1)
+                .build();
+
+        assertEquals(1, menu.getCurrentPage());
+    }
+
+    private PaginatedMenuBuilder<ItemStack> builder(int rows, List<ItemStack> entries)
+    {
+        return menuManager.paginatedBuilder("Test", rows, entries)
+                .itemFactory(Function.identity());
+    }
+
+    private List<ItemStack> entries(int count)
+    {
+        List<ItemStack> entries = new ArrayList<>();
+
+        for (int i = 0; i < count; i++)
+            entries.add(new ItemStack(Material.DIAMOND, i + 1));
+
+        return entries;
     }
 
     private InventoryClickEvent clickEvent(Player player, int slot)

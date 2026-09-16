@@ -8,34 +8,24 @@ public final class DatabaseConfiguration
     public DatabaseConfiguration(DatabaseType type, Object settings)
     {
         if (type == null)
-            throw new IllegalArgumentException(
-                    "Database type cannot be null"
-            );
+            throw new IllegalArgumentException("Database type cannot be null");
 
         if (settings == null)
-            throw new IllegalArgumentException(
-                    "Database settings cannot be null"
-            );
+            throw new IllegalArgumentException("Database settings cannot be null");
 
         switch (type)
         {
             case SQLITE:
                 if (!(settings instanceof SQLiteConfiguration))
-                    throw new IllegalArgumentException(
-                            "SQLite database requires SQLiteConfiguration"
-                    );
+                    throw new IllegalArgumentException("SQLite database requires SQLiteConfiguration");
                 break;
             case MYSQL, MARIADB:
                 if (!(settings instanceof MySQLConfiguration))
-                    throw new IllegalArgumentException(
-                            "MySQL/MariaDB database required MySQLConfiguration"
-                    );
+                    throw new IllegalArgumentException("MySQL/MariaDB database required MySQLConfiguration");
                 break;
             case POSTGRESQL:
                 if (!(settings instanceof PostgreSQLConfiguration))
-                    throw new IllegalArgumentException(
-                            "PostgreSQL database requires PostgreSQLConfiguration"
-                    );
+                    throw new IllegalArgumentException("PostgreSQL database requires PostgreSQLConfiguration");
                 break;
         }
 

@@ -18,11 +18,21 @@ public final class StringUtil
 
     public static String replace(String message, Object... replacers)
     {
+        return color(substitute(message, replacers));
+    }
+
+    /**
+     * Same placeholder substitution as {@link #replace}, without translating
+     * color codes - for callers that need the raw {@code &}-coded text (e.g.
+     * to hand off to an Adventure legacy-ampersand deserializer themselves).
+     */
+    public static String substitute(String message, Object... replacers)
+    {
         if (message == null)
             return null;
 
         if (replacers == null)
-            return color(message);
+            return message;
 
         for (int i = 0; i + 1 < replacers.length; i += 2)
         {
@@ -35,6 +45,6 @@ public final class StringUtil
             );
         }
 
-        return color(message);
+        return message;
     }
 }

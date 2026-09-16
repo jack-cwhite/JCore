@@ -7,6 +7,7 @@ import org.yaml.snakeyaml.nodes.MappingNode;
 import org.yaml.snakeyaml.nodes.Node;
 import org.yaml.snakeyaml.nodes.NodeTuple;
 import org.yaml.snakeyaml.nodes.ScalarNode;
+import org.yaml.snakeyaml.nodes.Tag;
 
 import java.io.File;
 import java.io.InputStream;
@@ -15,6 +16,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 
 public final class YamlDefaultsMerger
 {
@@ -68,6 +70,13 @@ public final class YamlDefaultsMerger
                     "Could not read default YAML", e
             );
         }
+
+        // An empty target file (e.g. a freshly auto-provisioned config that
+        // hasn't been given content yet) composes to null rather than an
+        // empty mapping - treat that as "nothing to merge into yet" instead
+        // of an error.
+        if (targetNode == null)
+            targetNode = new MappingNode(Tag.MAP, new ArrayList<>(), DumperOptions.FlowStyle.BLOCK);
 
         if (!(targetNode instanceof MappingNode targetMapping))
             throw new RuntimeException(

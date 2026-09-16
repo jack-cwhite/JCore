@@ -15,9 +15,7 @@ public final class SQLiteDatabase extends AbstractDatabase
         super(taskManager);
 
         if (plugin == null)
-            throw new IllegalArgumentException(
-                    "Plugin cannot be null"
-            );
+            throw new IllegalArgumentException("Plugin cannot be null");
 
         this.databaseFile = new File(plugin.getDataFolder(), fileName);
     }
@@ -28,9 +26,7 @@ public final class SQLiteDatabase extends AbstractDatabase
         File parent = databaseFile.getParentFile();
 
         if (parent != null && !parent.exists() && !parent.mkdirs())
-            throw new DatabaseException(
-                    "Could not create database directory: " + parent
-            );
+            throw new DatabaseException("Could not create database directory: " + parent);
     }
 
     @Override
@@ -39,15 +35,9 @@ public final class SQLiteDatabase extends AbstractDatabase
         config.setJdbcUrl("jdbc:sqlite:" + databaseFile.getAbsolutePath());
         config.setDriverClassName("org.sqlite.JDBC");
 
-        // SQLite cannot safely handle concurrent writers, so the pool is
-        // limited to a single connection. WAL mode still lets readers
-        // proceed while a write is in progress.
         config.setMaximumPoolSize(1);
         config.setConnectionInitSql("PRAGMA journal_mode=WAL");
 
-        // With only one connection available, anything holding it (e.g. a
-        // transaction) blocks every other caller. Fail fast instead of
-        // hanging for Hikari's default 30s so contention is obvious.
         config.setConnectionTimeout(5000);
     }
 
